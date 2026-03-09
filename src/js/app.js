@@ -201,7 +201,8 @@ function updateCurrentDate() {
 
     const now = new Date();
 
-    element.textContent = now();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    element.textContent = now.toLocaleDateString('es-ES', options);
 
 }
 
@@ -290,30 +291,30 @@ function navigateTo(page) {
 }
 // Toggle del sidebar — colapsar en desktop
 function setupSidebarToggle() {
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
-    const sidebarToggle = document.getElementById('sidebarToggle');
-
-    if (!sidebar) {
-        console.warn('setupSidebarToggle: .sidebar no encontrado en el DOM');
-        return;
-    }
-
-    // Restaurar estado guardado
+    // Restaurar estado guardado al cargar
     if (localStorage.getItem('sidebarCollapsed') === 'true') {
-        sidebar.classList.add('collapsed');
-        mainContent?.classList.add('sidebar-collapsed');
+        // Necesitamos un pequeño timeout porque el sidebar entra via fetch async
+        setTimeout(() => {
+            document.querySelector('.sidebar')?.classList.add('collapsed');
+            document.querySelector('.main-content')?.classList.add('sidebar-collapsed');
+        }, 50); // Tiempo razonable para que el DOM se asigne
     }
 
-    // Colapsar / expandir con el botón ‹ del sidebar
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', (e) => {
+    // Delegación de eventos: Escuchamos clics en el body para detectar el sidebarToggle
+    // sin importar cuándo fue inyectado el HTML del sidebar
+    document.body.addEventListener('click', (e) => {
+        const toggleBtn = e.target.closest('#sidebarToggle');
+        if (toggleBtn) {
             e.stopPropagation();
-            sidebar.classList.toggle('collapsed');
-            mainContent?.classList.toggle('sidebar-collapsed');
-            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-        });
-    }
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+
+            if (sidebar) sidebar.classList.toggle('collapsed');
+            if (mainContent) mainContent.classList.toggle('sidebar-collapsed');
+
+            localStorage.setItem('sidebarCollapsed', sidebar?.classList.contains('collapsed'));
+        }
+    });
 }
 
 
@@ -557,47 +558,62 @@ function registerVisit(event) {
 }
 
 // Registro rápido desde modal
-function quickRegister(event) {
-    event.preventDefault();
+async function quickRegister(event) {
+    if (event) event.preventDefault();
 
     const nombre = document.getElementById('quickName').value.trim();
     const documento = document.getElementById('quickDocument').value.trim();
     const motivo = document.getElementById('quickReason').value;
     const persona_visitada = document.getElementById('quickPerson').value.trim();
+    const usuarioId = document.getElementById('usuarioId').value; // Del input oculto que ya configuramos en app.js
 
-    if (!nombre || !documento || !motivo || !persona_visitada) {
-        showToast('Por favor, complete todos los campos', 'error');
+    if (!nombre || !documento || !motivo || !persona_visitada || !usuarioId) {
+        showToast('Por favor, complete todos los campos y seleccione un usuario de la lista', 'error');
         return;
     }
 
     const today = new Date().toISOString().split('T')[0];
     const hours = String(new Date().getHours()).padStart(2, '0');
     const minutes = String(new Date().getMinutes()).padStart(2, '0');
+    const fechaHoraIngreso = `${today}T${hours}:${minutes}:00`;
 
-    const visitor = {
-        id: id,
-        name: nombre,
-        documentType: 'DNI',
-        document: documento,
-        fecha: today,
-        hora_entrada: `${hours}:${minutes}`,
-        motivo: reason,
-        persona_visitada: persona_visitada,
-        department: '',
-        vehiclePlate: '',
-        notes: '',
-        timeOut: '',
-        status: 'active'
+    const visitData = {
+        dniVisitante: documento,
+        nombreVisitante: nombre,
+        motivo: motivo,
+        horaIngreso: fechaHoraIngreso,
+        usuario_id: parseInt(usuarioId, 10),
+        estadoRegistro: "REGISTRADO"
     };
 
-    visitors.unshift(visitor);
-    saveVisitors();
+    try {
+        const response = await fetch("http://localhost:8080/api/visitas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(visitData)
+        });
 
-    closeRegisterModal();
-    showToast(`${name} ha sido registrado exitosamente`, 'success');
+        if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
 
-    renderTable();
-    updateStats();
+        await response.json();
+
+        closeRegisterModal();
+        showToast(`${nombre} ha sido registrado exitosamente`, 'success');
+
+        // Refrescar tabla en background
+        renderTable();
+
+        // Limpiar inputs
+        document.getElementById('quickName').value = '';
+        document.getElementById('quickDocument').value = '';
+        document.getElementById('quickReason').value = '';
+        document.getElementById('quickPerson').value = '';
+        document.getElementById('usuarioId').value = '';
+
+    } catch (error) {
+        console.error("Error en registro rápido:", error);
+        showToast('Error al conectar con el backend', 'error');
+    }
 }
 
 // Resetear formulario
@@ -617,26 +633,11 @@ function editVisitor(id) {
     const visitor = visitors.find(v => v.id === id);
     if (!visitor) return;
 
-    // Llenar formulario (soporta nombres del API y de los datos de ejemplo)
-    document.getElementById('visitorName').value = visitor.nombreVisitante || visitor.nombre || visitor.name || '';
-    document.getElementById('documentType').value = visitor.documentType || 'DNI';
-    document.getElementById('documentNumber').value = visitor.dniVisitante || visitor.documento || visitor.document || '';
-    document.getElementById('visitDate').value = visitor.fecha || visitor.date || '';
-    document.getElementById('visitTime').value = visitor.horaIngreso || visitor.hora_entrada || visitor.timeIn || '';
-    document.getElementById('visitReason').value = visitor.motivo || visitor.reason || '';
-    document.getElementById('personVisited').value = (visitor.usuario ? visitor.usuario.nombre : visitor.persona_visitada) || visitor.person || '';
-    document.getElementById('department').value = visitor.department || '';
-    document.getElementById('vehiclePlate').value = visitor.vehiclePlate || '';
-    document.getElementById('additionalNotes').value = visitor.notes || '';
+    // Almacenar el ID temporalmente para que la vista de "registro" lo lea al cargar
+    sessionStorage.setItem('editVisitorId', id);
 
-    editingId = id;
-
-    // Ir a sección de registro
+    // Ir a sección de registro (el enrutador cargará HTML async)
     navigateTo('registro');
-
-    // Cambiar texto del botón
-    document.querySelector('.btn-submit').innerHTML =
-        '<i class="fas fa-save"></i> Actualizar Visita';
 }
 
 // Ver detalles del visitante

@@ -77,7 +77,12 @@
                     <label for="personVisited">
                         <i class="fas fa-user-tie"></i> Persona a Visitar *
                     </label>
-                    <input type="text" id="personVisited" required placeholder="Ej: Prof. María López" maxlength="100">
+                    <input type="text" id="personVisited" required placeholder="Ej: Prof. María López" maxlength="100"
+                        autocomplete="off">
+
+                    <div id="suggestions" class="suggestions-box"></div>
+                    <!-- Guardará el id real del usuario backend -->
+                    <input type="hidden" id="usuarioId">
                 </div>
 
                 <div class="form-group">
