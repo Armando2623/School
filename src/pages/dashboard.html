@@ -1,0 +1,132 @@
+<!-- Dashboard Section -->
+<section class="content-section active" id="dashboardSection">
+    <!-- Stats Cards -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-icon active-visitors">
+                <i class="fas fa-user-clock"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value" id="activeVisitors">0</span>
+                <span class="stat-label">Visitas Activas</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon today-visits">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value" id="todayVisits">0</span>
+                <span class="stat-label">Hoy</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon weekly-avg">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value" id="weeklyAvg">0</span>
+                <span class="stat-label">Promedio Semanal</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon checked-out">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value" id="checkedOut">0</span>
+                <span class="stat-label">Salidas Hoy</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="action-btn primary" onclick="showRegisterModal()">
+            <i class="fas fa-plus"></i>
+            <span>Nueva Visita</span>
+        </button>
+        <button class="action-btn secondary" onclick="filterByStatus('REGISTRADO')">
+            <i class="fas fa-user-clock"></i>
+            <span>Ver Activos</span>
+        </button>
+        <button class="action-btn secondary" onclick="filterByStatus('all')">
+            <i class="fas fa-list"></i>
+            <span>Ver Todos</span>
+        </button>
+    </div>
+
+    <!-- Recent Activity Table -->
+    <div class="table-container">
+        <div class="table-header">
+            <h2><i class="fas fa-history"></i> Actividad Reciente</h2>
+            <div class="table-actions">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar visitante..." onkeyup="searchVisitors()">
+                </div>
+                <select id="filterStatus" onchange="filterByStatus(this.value)">
+                    <option value="all">Todos los estados</option>
+                    <option value="REGISTRADO">Registrados</option>
+                    <option value="checked-out">Check-out</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table" id="visitsTable">
+                <thead>
+                <tr>
+                    <th onclick="sortTable('id')">
+                        <i class="fas fa-hashtag"></i> ID
+                        <i class="fas fa-sort sort-icon"></i>
+                    </th>
+                    <th onclick="sortTable('name')">
+                        <i class="fas fa-user"></i> Visitante
+                        <i class="fas fa-sort sort-icon"></i>
+                    </th>
+                    <th onclick="sortTable('document')">
+                        <i class="fas fa-id-card"></i> Documento
+                        <i class="fas fa-sort sort-icon"></i>
+                    </th>
+                    <th onclick="sortTable('reason')">
+                        <i class="fas fa-clipboard-list"></i> Motivo
+                        <i class="fas fa-sort sort-icon"></i>
+                    </th>
+                    <th onclick="sortTable('person')">
+                        <i class="fas fa-user-tie"></i> Visitado
+                        <i class="fas fa-sort sort-icon"></i>
+                    </th>
+                    <th onclick="sortTable('timeIn')">
+                        <i class="fas fa-sign-in-alt"></i> Entrada
+                        <i class="fas fa-sort sort-icon"></i>
+                    </th>
+                    <th onclick="sortTable('timeOut')">
+                        <i class="fas fa-sign-out-alt"></i> Salida
+                        <i class="fas fa-sort sort-icon"></i>
+                    </th>
+                    <th>
+                        <i class="fas fa-flag"></i> Estado
+                    </th>
+                    <th>
+                        <i class="fas fa-cogs"></i> Acciones
+                    </th>
+                </tr>
+                </thead>
+                <tbody id="visitsTableBody">
+                <!-- Dynamic Content -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="records-count" id="recordsCount">0 registros</span>
+            <div class="pagination" id="pagination">
+                <!-- Pagination controls -->
+            </div>
+        </div>
+    </div>
+</section>

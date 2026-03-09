@@ -1,0 +1,57 @@
+<!-- Sidebar Navigation -->
+<!-- NOTA: sin id="sidebar" aquí porque el contenedor padre ya lo tiene -->
+<aside class="sidebar">
+
+    <div class="sidebar-header">
+        <div class="logo">
+            <i class="fas fa-school"></i>
+            <span class="logo-text">SchoolGuard</span>
+        </div>
+        <!-- Botón colapsar / expandir (type="button" para no disparar navegación) -->
+        <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Colapsar menú">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul class="nav-list">
+            <li class="nav-item active" data-page="dashboard">
+                <a href="#dashboard" title="Dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item" data-page="visits">
+                <a href="#visits" title="Visitas">
+                    <i class="fas fa-users"></i>
+                    <span class="nav-label">Visitas</span>
+                </a>
+            </li>
+            <li class="nav-item" data-page="registro">
+                <a href="#registro" title="Registrar Visita">
+                    <i class="fas fa-user-plus"></i>
+                    <span class="nav-label">Registrar Visita</span>
+                </a>
+            </li>
+            <li class="nav-item" data-page="reports">
+                <a href="#reports" title="Reportes">
+                    <i class="fas fa-file-alt"></i>
+                    <span class="nav-label">Reportes</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-profile">
+            <div class="user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="user-info">
+                <span class="user-name">Admin Colegio</span>
+                <span class="user-role">Administrador</span>
+            </div>
+        </div>
+    </div>
+
+</aside>

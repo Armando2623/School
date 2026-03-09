@@ -1,0 +1,130 @@
+<!-- Register Section -->
+<section class="content-section" id="registerSection">
+    <div class="form-container">
+        <div class="form-header">
+            <h2><i class="fas fa-user-plus"></i> Registrar Nueva Visita</h2>
+            <p>Ingrese los datos del visitante para registrar su entrada</p>
+        </div>
+
+        <form id="registerForm" class="visit-form" onsubmit="registerVisit(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="visitorName">
+                        <i class="fas fa-user"></i> Nombre Completo *
+                    </label>
+                    <input type="text" id="visitorName" required placeholder="Ej: Juan Pérez García" maxlength="100">
+                    <span class="error-message" id="nameError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="documentType">
+                        <i class="fas fa-id-card"></i> Tipo de Documento *
+                    </label>
+                    <select id="documentType" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="DNI">DNI</option>
+                        <option value="Pasaporte">Pasaporte</option>
+                        <option value="Licencia">Licencia de Conducir</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="documentNumber">
+                        <i class="fas fa-hashtag"></i> Número de Documento *
+                    </label>
+                    <input type="text" id="documentNumber" required placeholder="Ej: 12345678A" maxlength="20">
+                    <span class="error-message" id="documentError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="visitDate">
+                        <i class="fas fa-calendar"></i> Fecha *
+                    </label>
+                    <input type="date" id="visitDate" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="visitTime">
+                        <i class="fas fa-clock"></i> Hora de Entrada *
+                    </label>
+                    <input type="time" id="visitTime" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="visitReason">
+                        <i class="fas fa-clipboard-list"></i> Motivo de Visita *
+                    </label>
+                    <select id="visitReason" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="Reunión Padres">Reunión de Padres</option>
+                        <option value="Entrega Materiales">Entrega de Materiales</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="Evento Escolar">Evento Escolar</option>
+                        <option value="Entrevista">Entrevista de Trabajo</option>
+                        <option value="Proveedor">Proveedor</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="personVisited">
+                        <i class="fas fa-user-tie"></i> Persona a Visitar *
+                    </label>
+                    <input type="text" id="personVisited" required placeholder="Ej: Prof. María López" maxlength="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="department">
+                        <i class="fas fa-building"></i> Departamento/Área
+                    </label>
+                    <select id="department">
+                        <option value="">Seleccionar...</option>
+                        <option value="Administración">Administración</option>
+                        <option value="Secretaría">Secretaría</option>
+                        <option value="Dirección">Dirección</option>
+                        <option value="Biblioteca">Biblioteca</option>
+                        <option value="Cocina">Cocina</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="Aulas">Aulas</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group full-width">
+                    <label for="vehiclePlate">
+                        <i class="fas fa-car"></i> Placa del Vehículo (Opcional)
+                    </label>
+                    <input type="text" id="vehiclePlate" placeholder="Ej: ABC-1234" maxlength="15">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group full-width">
+                    <label for="additionalNotes">
+                        <i class="fas fa-sticky-note"></i> Notas Adicionales (Opcional)
+                    </label>
+                    <textarea id="additionalNotes" rows="3" placeholder="Observaciones o información relevante..."
+                        maxlength="500"></textarea>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="resetForm()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-check"></i> Registrar Entrada
+                </button>
+            </div>
+        </form>
+    </div>
+</section>

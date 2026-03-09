@@ -1,0 +1,18 @@
+{
+  "name": "school-visit-registration",
+  "version": "1.0.0",
+  "description": "SchoolGuard - Sistema de Registro de Visitas Escolares",
+  "main": "src/js/app.js",
+  "scripts": {
+    "dev": "npx serve src",
+    "build": "robocopy src dist /E /NFL /NDL /NJH /NJS & exit 0",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "school",
+    "visitor",
+    "management"
+  ],
+  "author": "SchoolGuard",
+  "license": "MIT"
+}

@@ -1,0 +1,53 @@
+<!-- Reports Section -->
+<section class="content-section" id="reportsSection">
+    <div class="reports-container">
+        <div class="report-header">
+            <h2><i class="fas fa-file-alt"></i> Reportes y Estadísticas</h2>
+        </div>
+
+        <div class="date-range-selector">
+            <div class="form-group">
+                <label for="startDate">
+                    <i class="fas fa-calendar"></i> Fecha Inicial
+                </label>
+                <input type="date" id="startDate">
+            </div>
+            <div class="form-group">
+                <label for="endDate">
+                    <i class="fas fa-calendar"></i> Fecha Final
+                </label>
+                <input type="date" id="endDate">
+            </div>
+            <button class="btn-generate" onclick="generateReport()">
+                <i class="fas fa-chart-bar"></i> Generar Reporte
+            </button>
+        </div>
+
+        <div class="report-summary" id="reportSummary">
+            <div class="summary-card">
+                <h3>Total de Visitas</h3>
+                <span class="summary-value" id="totalVisitsReport">0</span>
+            </div>
+            <div class="summary-card">
+                <h3>Visitas Activas</h3>
+                <span class="summary-value" id="activeVisitsReport">0</span>
+            </div>
+            <div class="summary-card">
+                <h3>Motivo Más Común</h3>
+                <span class="summary-value" id="topReason">N/A</span>
+            </div>
+        </div>
+
+        <div class="export-options">
+            <button class="export-btn" onclick="exportReport('pdf')">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
+            <button class="export-btn" onclick="exportReport('excel')">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+            <button class="export-btn" onclick="printReport()">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+        </div>
+    </div>
+</section>
