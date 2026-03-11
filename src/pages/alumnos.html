@@ -1,0 +1,202 @@
+<!-- Módulo: Gestión de Alumnos -->
+<section class="content-section" id="alumnosSection">
+
+    <div class="module-header">
+        <div>
+            <h2><i class="fas fa-user-graduate"></i> Gestión de Alumnos</h2>
+            <p>Registro de alumnos y asignación de apoderado</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="action-btn secondary" onclick="toggleImportPanel()">
+                <i class="fas fa-file-excel"></i> <span>Importar Excel</span>
+            </button>
+            <button class="action-btn primary" onclick="showAddAlumnoForm()">
+                <i class="fas fa-plus"></i> <span>Nuevo Alumno</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Panel de importación Excel (oculto por defecto) -->
+    <div id="importPanel" class="form-card" style="display:none;">
+        <div class="form-card-header">
+            <h3><i class="fas fa-file-excel" style="color:#21a366;"></i> Importar Alumnos desde Excel</h3>
+            <button type="button" class="btn-icon" onclick="toggleImportPanel()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Instrucciones del formato -->
+        <div class="import-instructions">
+            <p><i class="fas fa-info-circle"></i> El archivo Excel debe tener estas columnas (fila 1 = encabezados):</p>
+            <table class="format-table">
+                <thead>
+                    <tr>
+                        <th>nombre_alumno</th>
+                        <th>grado</th>
+                        <th>seccion</th>
+                        <th>dni_apoderado</th>
+                        <th>nombre_apoderado</th>
+                        <th>telefono</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>María Rodríguez</td>
+                        <td>3°</td>
+                        <td>A</td>
+                        <td>12345678</td>
+                        <td>Carlos Rodríguez</td>
+                        <td>987654321</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="font-size:12px; color:var(--text-secondary); margin-top:6px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <code>dni_apoderado</code> y <code>nombre_apoderado</code> son opcionales.
+                Si se incluyen, el apoderado se registrará automáticamente.
+            </p>
+        </div>
+
+        <!-- Zona de archivo -->
+        <div class="import-drop-zone" id="dropZone" ondragover="event.preventDefault(); this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')" ondrop="handleExcelDrop(event)">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Arrastra tu archivo aquí o</p>
+            <label for="excelInput" class="btn-submit" style="cursor:pointer; display:inline-flex; margin-top:6px;">
+                <i class="fas fa-folder-open"></i> Seleccionar archivo
+            </label>
+            <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" style="display:none"
+                onchange="handleExcelFile(this.files[0])">
+        </div>
+
+        <!-- Log de progreso -->
+        <div id="importLog" style="display:none; margin-top:16px;">
+            <div class="import-log-header">
+                <strong><i class="fas fa-terminal"></i> Resultado de importación</strong>
+                <span id="importSummary"></span>
+            </div>
+            <div id="importLogBody" class="import-log-body"></div>
+        </div>
+    </div>
+
+    <!-- Formulario de registro (oculto por defecto) -->
+    <div id="alumnoFormCard" class="form-card" style="display:none;">
+        <div class="form-card-header">
+            <h3 id="alumnoFormTitle"><i class="fas fa-user-plus"></i> Registrar Alumno</h3>
+            <button type="button" class="btn-icon" onclick="hideAlumnoForm()" title="Cerrar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="alumnoForm" onsubmit="submitAlumnoForm(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="aNombre"><i class="fas fa-user"></i> Nombre del Alumno *</label>
+                    <input type="text" id="aNombre" required placeholder="Ej: María Rodríguez" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label for="aGrado"><i class="fas fa-graduation-cap"></i> Grado *</label>
+                    <select id="aGrado" required>
+                        <option value="">Seleccionar...</option>
+                        <optgroup label="Inicial">
+                            <option value="3°">Inical 3 años</option>
+                            <option value="4°">Inicial 4 años</option>
+                            <option value="5°">Inicial 5 años</option>
+                        </optgroup>
+                        <optgroup label="Primaria">
+                            <option value="1°">1° Primaria</option>
+                            <option value="2°">2° Primaria</option>
+                            <option value="3°">3° Primaria</option>
+                            <option value="4°">4° Primaria</option>
+                            <option value="5°">5° Primaria</option>
+                            <option value="6°">6° Primaria</option>
+                        </optgroup>
+                        <optgroup label="Secundaria">
+                            <option value="1° Sec">1° Secundaria</option>
+                            <option value="2° Sec">2° Secundaria</option>
+                            <option value="3° Sec">3° Secundaria</option>
+                            <option value="4° Sec">4° Secundaria</option>
+                            <option value="5° Sec">5° Secundaria</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="aSeccion"><i class="fas fa-door-open"></i> Sección *</label>
+                    <select id="aSeccion" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="aApoderadoDni">
+                        <i class="fas fa-user-tie"></i> DNI del Apoderado
+                        <span style="font-size:11px; color:var(--text-secondary);">(opcional)</span>
+                    </label>
+                    <div class="dni-input-wrapper">
+                        <input type="text" id="aApoderadoDni" placeholder="Ingrese DNI del apoderado..." maxlength="20"
+                            autocomplete="off">
+                        <span class="dni-status" id="apoderadoStatus"></span>
+                    </div>
+                    <!-- El nombre del apoderado se muestra automáticamente -->
+                    <div id="apoderadoFound" class="visitor-found-banner" style="display:none; margin-top:6px;">
+                        <i class="fas fa-user-check"></i>
+                        <span id="apoderadoFoundName">-</span>
+                    </div>
+                    <input type="hidden" id="aApoderadoId">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="hideAlumnoForm()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Guardar Alumno
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de alumnos -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 style="font-size:15px; color:var(--text-secondary);">
+                <i class="fas fa-list"></i> Lista de Alumnos
+            </h3>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="alumnoSearch" placeholder="Buscar por nombre o grado..."
+                    oninput="filtrarAlumnos()">
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table" id="alumnosTable">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-hashtag"></i> ID</th>
+                        <th><i class="fas fa-user-graduate"></i> Nombre</th>
+                        <th><i class="fas fa-graduation-cap"></i> Grado</th>
+                        <th><i class="fas fa-door-open"></i> Sección</th>
+                        <th><i class="fas fa-user-tie"></i> Apoderado</th>
+                        <th><i class="fas fa-cogs"></i> Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="alumnosTableBody">
+                    <!-- Contenido dinámico -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="records-count" id="alumnosCount">0 alumnos</span>
+        </div>
+    </div>
+
+</section>

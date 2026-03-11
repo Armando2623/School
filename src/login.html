@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolGuard — Iniciar Sesión</title>
+    <!-- Misma hoja de estilos que el resto de la app -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ── Centrado de pantalla completa ── */
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--background-color);
+            font-family: inherit;
+        }
+
+        /* ── Tarjeta de login ── */
+        .login-wrapper {
+            width: 100%;
+            max-width: 420px;
+            padding: 24px;
+        }
+
+        .login-brand {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .login-brand .brand-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: var(--primary-color);
+            color: #fff;
+            font-size: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+        }
+
+        .login-brand h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 4px;
+        }
+
+        .login-brand p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Reutilizamos .form-card de styles.css, solo añadimos padding extra */
+        .login-wrapper .form-card {
+            padding: 28px;
+        }
+
+        /* Banner de error */
+        .error-banner {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: var(--border-radius);
+            color: var(--error-color);
+            font-size: 13px;
+            padding: 10px 14px;
+            margin-bottom: 18px;
+        }
+
+        .error-banner.show {
+            display: flex;
+        }
+
+        /* Campo de contraseña con botón de ojo */
+        .pwd-wrapper {
+            position: relative;
+        }
+
+        .pwd-wrapper input {
+            padding-right: 42px;
+            width: 100%;
+        }
+
+        .pwd-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 4px;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .pwd-toggle:hover {
+            color: var(--primary-color);
+        }
+
+        /* Botón de login ocupa todo el ancho */
+        .btn-login {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-wrapper">
+
+        <!-- Marca -->
+        <div class="login-brand">
+            <div class="brand-icon">
+                <i class="fas fa-school"></i>
+            </div>
+            <h1>SchoolGuard</h1>
+            <p>Sistema de Registro de Visitas</p>
+        </div>
+
+        <!-- Tarjeta del formulario (misma clase que el resto de módulos) -->
+        <div class="form-card">
+
+            <!-- Header de la card -->
+            <div class="form-card-header" style="margin-bottom:20px;">
+                <h3><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</h3>
+            </div>
+
+            <!-- Banner de error -->
+            <div class="error-banner" id="errorBanner">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorMsg">Usuario o contraseña incorrectos.</span>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)">
+
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label for="loginUsuario">
+                        <i class="fas fa-user"></i> Usuario
+                    </label>
+                    <input type="text" id="loginUsuario" placeholder="Ej: jperez" autocomplete="username" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom:24px;">
+                    <label for="loginPassword">
+                        <i class="fas fa-lock"></i> Contraseña
+                    </label>
+                    <div class="pwd-wrapper">
+                        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"
+                            required>
+                        <button type="button" class="pwd-toggle" onclick="togglePwd()" title="Mostrar/ocultar">
+                            <i class="fas fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit btn-login" id="btnLogin">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+
+            </form>
+
+        </div>
+
+        <div class="login-footer">
+            &copy; 2024 SchoolGuard &middot; Acceso restringido al personal autorizado
+        </div>
+
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8080";
+
+        // Si ya hay sesión válida, ir al app directamente
+        if (localStorage.getItem('sg_token')) {
+            window.location.replace('index.html');
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const btn = document.getElementById('btnLogin');
+            const banner = document.getElementById('errorBanner');
+            const usuario = document.getElementById('loginUsuario').value.trim();
+            const pass = document.getElementById('loginPassword').value;
+
+            banner.classList.remove('show');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Autenticando...';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, contraseña: pass })
+                });
+
+                if (!res.ok) throw new Error('Credenciales inválidas');
+
+                const data = await res.json();
+
+                localStorage.setItem('sg_token', data.token);
+                localStorage.setItem('sg_nombre', data.nombre);
+                localStorage.setItem('sg_usuario', data.usuario);
+                localStorage.setItem('sg_rol', data.rol);
+                localStorage.setItem('sg_id', data.id);
+
+                window.location.replace('index.html');
+
+            } catch (err) {
+                document.getElementById('errorMsg').textContent =
+                    err.message === 'Credenciales inválidas'
+                        ? 'Usuario o contraseña incorrectos.'
+                        : 'No se pudo conectar con el servidor.';
+                banner.classList.add('show');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+            }
+        }
+
+        function togglePwd() {
+            const input = document.getElementById('loginPassword');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+    </script>
+
+</body>
+
+</html>

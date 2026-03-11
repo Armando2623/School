@@ -167,14 +167,41 @@ function initializeApp() {
     // Configurar eventos del sidebar
     setupSidebarToggle();
 
+    // Poblar nombre/rol del usuario y ocultar ítems sin permiso
+    setupSidebarUI();
+
+    // Conectar WebSocket de mensajería
+    if (typeof chatConnect === 'function') chatConnect();
+
     // Configurar validación de formularios
     setupFormValidation();
+}
+
+/**
+ * Llena el nombre/rol del usuario logueado en el sidebar footer
+ * y oculta los ítems de nav que el rol actual no puede ver.
+ * Se ejecuta después de que loader.js haya inyectado sidebar.html en el DOM.
+ */
+function setupSidebarUI() {
+    // Nombre y rol en el footer
+    if (typeof initUserInfo === 'function') initUserInfo();
+
+    // Filtrar ítems del menú según el rol
+    const rol = typeof getRol === 'function' ? getRol() : null;
+    if (!rol) return;
+
+    document.querySelectorAll('.nav-item[data-roles]').forEach(li => {
+        const allowed = li.dataset.roles.split(',');
+        if (!allowed.includes(rol)) {
+            li.style.display = 'none';
+        }
+    });
 }
 
 // Cargar visitantes desde la API (con fallback a datos iniciales si el backend no responde)
 async function loadVisitors() {
     try {
-        const response = await fetch("http://localhost:8080/api/visitas");
+        const response = await authFetch("http://localhost:8080/api/visitas");
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         visitors = await response.json();
     } catch (error) {
@@ -329,7 +356,7 @@ function setupSidebarToggle() {
 
 async function renderTable() {
     try {
-        const response = await fetch("http://localhost:8080/api/visitas");
+        const response = await authFetch("http://localhost:8080/api/visitas");
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         visitors = await response.json();
     } catch (error) {
@@ -353,13 +380,47 @@ async function renderTable() {
 
     if (!Array.isArray(visitors)) return;
 
+    // ── Fecha de hoy como string "YYYY-MM-DD" ──────────────────
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    // ── ¿Estamos en el dashboard? ──────────────────────────────
+    const enDashboard = (location.hash === '' || location.hash === '#dashboard');
+
+    // ── Helper: convierte horaIngreso (array o ISO) a "HH:mm" ─
+    function formatHora(raw) {
+        if (!raw) return '--:--';
+        // Jackson puede enviar un array [año, mes, dia, hora, min, seg, nano]
+        if (Array.isArray(raw)) {
+            const h = String(raw[3] ?? 0).padStart(2, '0');
+            const m = String(raw[4] ?? 0).padStart(2, '0');
+            return `${h}:${m}`;
+        }
+        // O un string ISO "2024-03-11T09:30:00"
+        const d = new Date(raw);
+        if (!isNaN(d)) {
+            return d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+        // Fallback: devolver tal cual (puede ser "09:30:00")
+        return String(raw).slice(0, 5);
+    }
+
+    // ── Helper: extrae "YYYY-MM-DD" de horaIngreso ─────────────
+    function extractFecha(raw) {
+        if (!raw) return '';
+        if (Array.isArray(raw)) {
+            const y = raw[0], mo = String(raw[1]).padStart(2, '0'), d = String(raw[2]).padStart(2, '0');
+            return `${y}-${mo}-${d}`;
+        }
+        return String(raw).slice(0, 10);
+    }
+
     // ===== FILTRAR VISITAS =====
     let filteredVisitors = visitors.filter(v => {
 
         const status = (v.estadoRegistro || '');
-        const nombre = (v.nombre || '').toLowerCase();
-        const documento = (v.documento || '').toLowerCase();
-        const persona_visitada = (v.persona_visitada || '').toLowerCase();
+        const nombre = (v.nombreVisitante || '').toLowerCase();
+        const documento = (v.dniVisitante || '').toLowerCase();
+        const persona_visitada = (v.usuario?.nombre || '').toLowerCase();
         const motivo = (v.motivo || '').toLowerCase();
 
         const matchesStatus =
@@ -372,15 +433,27 @@ async function renderTable() {
             persona_visitada.includes(searchTerm) ||
             motivo.includes(searchTerm);
 
-        return matchesStatus && matchesSearch;
+        // En el dashboard solo mostrar los registros de HOY
+        const matchesDate = enDashboard
+            ? extractFecha(v.horaIngreso) === todayStr
+            : true;
+
+        return matchesStatus && matchesSearch && matchesDate;
     });
+
+    // ===== ACTUALIZAR CONTADOR =====
+    const recordsCountEl = document.getElementById('recordsCount');
+    if (recordsCountEl) {
+        const label = enDashboard ? 'registros de hoy' : 'registros';
+        recordsCountEl.textContent = `${filteredVisitors.length} ${label}`;
+    }
 
     // ===== TABLA VACÍA =====
     if (filteredVisitors.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="9">
-                    No hay registros
+                    ${enDashboard ? 'No hay registros de hoy' : 'No hay registros'}
                 </td>
             </tr>
         `;
@@ -395,26 +468,23 @@ async function renderTable() {
             <td>${v.dniVisitante ?? ''}</td>
             <td>${v.motivo ?? ''}</td>
             <td>${v.usuario?.nombre ?? ''}</td>
-            <td>${v.horaIngreso ?? ''}</td>
-            <td>${v.horaSalida ?? '--:--'}</td>
-
-             <td>${v.estadoRegistro ?? ''}</td>
-             <td>
-                                <div class="action-buttons">
-                                    ${v.estado === '1' ? `
-                                        <button class="btn-action checkout" onclick="checkoutVisitor(${v.id})" title="Check-out">
-                                            <i class="fas fa-sign-out-alt"></i>
-                                        </button>
-                                    ` : ''}
-                                    <button class="btn-action edit" onclick="editVisitor(${v.id})" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn-action view" onclick="viewVisitor(${v.id})" title="Ver detalles">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </td>
-
+            <td>${formatHora(v.horaIngreso)}</td>
+            <td>${v.estadoRegistro ?? ''}</td>
+            <td>
+                <div class="action-buttons">
+                    ${v.estado === '1' ? `
+                        <button class="btn-action checkout" onclick="checkoutVisitor(${v.id})" title="Check-out">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    ` : ''}
+                    <button class="btn-action edit" onclick="editVisitor(${v.id})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-action view" onclick="viewVisitor(${v.id})" title="Ver detalles">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </td>
         </tr>
     `).join('');
 }
@@ -535,7 +605,6 @@ function registerVisit(event) {
         motivo: document.getElementById('visitReason').value,
         persona_visitada: document.getElementById('personVisited').value.trim(),
         department: document.getElementById('department').value,
-        vehiclePlate: document.getElementById('vehiclePlate').value.trim(),
         notes: document.getElementById('additionalNotes').value.trim(),
         timeOut: '',
         status: 'active'
@@ -587,7 +656,7 @@ async function quickRegister(event) {
     };
 
     try {
-        const response = await fetch("http://localhost:8080/api/visitas", {
+        const response = await authFetch("http://localhost:8080/api/visitas", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(visitData)
@@ -633,10 +702,10 @@ function editVisitor(id) {
     const visitor = visitors.find(v => v.id === id);
     if (!visitor) return;
 
-    // Almacenar el ID temporalmente para que la vista de "registro" lo lea al cargar
-    sessionStorage.setItem('editVisitorId', id);
+    // Almacenar el objeto completo para que registro.js pueda pre-llenar todos los campos
+    sessionStorage.setItem('editVisitorData', JSON.stringify(visitor));
 
-    // Ir a sección de registro (el enrutador cargará HTML async)
+    // Ir a sección de registro
     navigateTo('registro');
 }
 
@@ -998,7 +1067,7 @@ function setupUsuarioAutocomplete() {
         }
 
         try {
-            const response = await fetch(
+            const response = await authFetch(
                 `http://localhost:8080/api/visitas/usuarios?search=${texto}`
             );
             const usuarios = await response.json();

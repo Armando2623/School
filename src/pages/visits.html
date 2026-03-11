@@ -1,45 +1,92 @@
-<div class="table-wrapper">
-    <table class="data-table" id="visitsTable">
-        <thead>
-        <tr>
-            <th onclick="sortTable('id')">
-                <i class="fas fa-hashtag"></i> ID
-                <i class="fas fa-sort sort-icon"></i>
-            </th>
-            <th onclick="sortTable('name')">
-                <i class="fas fa-user"></i> Visitante
-                <i class="fas fa-sort sort-icon"></i>
-            </th>
-            <th onclick="sortTable('document')">
-                <i class="fas fa-id-card"></i> Documento
-                <i class="fas fa-sort sort-icon"></i>
-            </th>
-            <th onclick="sortTable('reason')">
-                <i class="fas fa-clipboard-list"></i> Motivo
-                <i class="fas fa-sort sort-icon"></i>
-            </th>
-            <th onclick="sortTable('person')">
-                <i class="fas fa-user-tie"></i> Visitado
-                <i class="fas fa-sort sort-icon"></i>
-            </th>
-            <th onclick="sortTable('timeIn')">
-                <i class="fas fa-sign-in-alt"></i> Entrada
-                <i class="fas fa-sort sort-icon"></i>
-            </th>
-            <th onclick="sortTable('timeOut')">
-                <i class="fas fa-sign-out-alt"></i> Salida
-                <i class="fas fa-sort sort-icon"></i>
-            </th>
-            <th>
-                <i class="fas fa-flag"></i> Estado
-            </th>
-            <th>
-                <i class="fas fa-cogs"></i> Acciones
-            </th>
-        </tr>
-        </thead>
-        <tbody id="visitsTableBody">
-        <!-- Dynamic Content -->
-        </tbody>
-    </table>
-</div>
+<!-- Módulo: Historial de Visitas -->
+<section class="content-section" id="visitsSection">
+
+    <div class="module-header">
+        <div>
+            <h2><i class="fas fa-history"></i> Historial de Visitas</h2>
+            <p>Consulta y filtra el registro completo de visitas</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="action-btn secondary" onclick="filterByStatus('REGISTRADO')">
+                <i class="fas fa-user-clock"></i> <span>Ver Activos</span>
+            </button>
+            <button class="action-btn secondary" onclick="filterByStatus('all')">
+                <i class="fas fa-list"></i> <span>Ver Todos</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabla igual que en dashboard -->
+    <div class="table-container">
+
+        <!-- Header con búsqueda y filtro -->
+        <div class="table-header">
+            <h2><i class="fas fa-table"></i> Registros</h2>
+            <div class="table-actions">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar visitante..." onkeyup="searchVisitors()">
+                </div>
+                <select id="filterStatus" onchange="filterByStatus(this.value)">
+                    <option value="all">Todos los estados</option>
+                    <option value="REGISTRADO">Registrados</option>
+                    <option value="SALIDA">Con salida</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="table-wrapper">
+            <table class="data-table" id="visitsTable">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable('id')">
+                            <i class="fas fa-hashtag"></i> ID
+                            <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th onclick="sortTable('name')">
+                            <i class="fas fa-user"></i> Visitante
+                            <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th onclick="sortTable('document')">
+                            <i class="fas fa-id-card"></i> Documento
+                            <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th onclick="sortTable('reason')">
+                            <i class="fas fa-clipboard-list"></i> Motivo
+                            <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th onclick="sortTable('person')">
+                            <i class="fas fa-user-tie"></i> Visitado
+                            <i class="fas fa-sort sort-icon"></i>
+                        </th>
+                        <th onclick="sortTable('timeIn')">
+                            <i class="fas fa-sign-in-alt"></i> Entrada
+                            <i class="fas fa-sort sort-icon"></i>
+                        </th>
+
+                        <th>
+                            <i class="fas fa-flag"></i> Estado
+                        </th>
+                        <th>
+                            <i class="fas fa-cogs"></i> Acciones
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="visitsTableBody">
+                    <!-- Dynamic Content -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer con contador y paginación -->
+        <div class="table-footer">
+            <span class="records-count" id="recordsCount">0 registros</span>
+            <div class="pagination" id="pagination">
+                <!-- Pagination controls -->
+            </div>
+        </div>
+
+    </div>
+
+</section>

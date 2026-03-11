@@ -1,5 +1,4 @@
 <!-- Sidebar Navigation -->
-<!-- NOTA: sin id="sidebar" aquí porque el contenedor padre ya lo tiene -->
 <aside class="sidebar">
 
     <div class="sidebar-header">
@@ -7,7 +6,6 @@
             <i class="fas fa-school"></i>
             <span class="logo-text">SchoolGuard</span>
         </div>
-        <!-- Botón colapsar / expandir (type="button" para no disparar navegación) -->
         <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Colapsar menú">
             <i class="fas fa-chevron-left"></i>
         </button>
@@ -27,16 +25,46 @@
                     <span class="nav-label">Visitas</span>
                 </a>
             </li>
-            <li class="nav-item" data-page="registro">
+            <!-- Solo roles con permiso de registro -->
+            <li class="nav-item" data-page="registro" data-roles="ADMINISTRADOR,PORTERO,SECRETARIA">
                 <a href="#registro" title="Registrar Visita">
                     <i class="fas fa-user-plus"></i>
                     <span class="nav-label">Registrar Visita</span>
                 </a>
             </li>
-            <li class="nav-item" data-page="reports">
+            <!-- Solo ADMINISTRADOR y SECRETARIA -->
+            <li class="nav-item" data-page="visitantes" data-roles="ADMINISTRADOR,SECRETARIA">
+                <a href="#visitantes" title="Visitantes">
+                    <i class="fas fa-address-book"></i>
+                    <span class="nav-label">Visitantes</span>
+                </a>
+            </li>
+            <li class="nav-item" data-page="alumnos" data-roles="ADMINISTRADOR,SECRETARIA">
+                <a href="#alumnos" title="Alumnos">
+                    <i class="fas fa-user-graduate"></i>
+                    <span class="nav-label">Alumnos</span>
+                </a>
+            </li>
+            <!-- Reportes: ADMIN, SECRETARIA, DIRECTOR -->
+            <li class="nav-item" data-page="reports" data-roles="ADMINISTRADOR,SECRETARIA,DIRECTOR">
                 <a href="#reports" title="Reportes">
                     <i class="fas fa-file-alt"></i>
                     <span class="nav-label">Reportes</span>
+                </a>
+            </li>
+            <!-- Usuarios: solo ADMINISTRADOR -->
+            <li class="nav-item" data-page="usuarios" data-roles="ADMINISTRADOR">
+                <a href="#usuarios" title="Usuarios del Sistema">
+                    <i class="fas fa-users-cog"></i>
+                    <span class="nav-label">Usuarios</span>
+                </a>
+            </li>
+            <!-- Mensajería: todos los roles -->
+            <li class="nav-item" data-page="mensajes">
+                <a href="#mensajes" title="Mensajería Interna" style="position:relative;">
+                    <i class="fas fa-comments"></i>
+                    <span class="nav-label">Mensajes</span>
+                    <span class="chat-nav-badge" id="chatBadge"></span>
                 </a>
             </li>
         </ul>
@@ -48,10 +76,14 @@
                 <i class="fas fa-user"></i>
             </div>
             <div class="user-info">
-                <span class="user-name">Admin Colegio</span>
-                <span class="user-role">Administrador</span>
+                <span class="user-name">Cargando...</span>
+                <span class="user-role"></span>
             </div>
         </div>
+        <button type="button" class="btn-logout" onclick="logout()" title="Cerrar sesión">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="nav-label">Salir</span>
+        </button>
     </div>
 
 </aside>

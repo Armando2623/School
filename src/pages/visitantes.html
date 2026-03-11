@@ -1,0 +1,154 @@
+<!-- Módulo: Gestión de Visitantes -->
+<section class="content-section" id="visitantesSection">
+
+    <div class="module-header">
+        <div>
+            <h2><i class="fas fa-address-book"></i> Gestión de Visitantes</h2>
+            <p>Registro de padres de familia, proveedores y personas externas</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="action-btn secondary" onclick="toggleImportVisitantesPanel()">
+                <i class="fas fa-file-excel"></i> <span>Importar Excel</span>
+            </button>
+            <button class="action-btn primary" onclick="showAddVisitanteForm()">
+                <i class="fas fa-plus"></i> <span>Nuevo Visitante</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Panel de importación Excel (oculto por defecto) -->
+    <div id="importVisitantesPanel" class="form-card" style="display:none;">
+        <div class="form-card-header">
+            <h3><i class="fas fa-file-excel" style="color:#21a366;"></i> Importar Visitantes desde Excel</h3>
+            <button type="button" class="btn-icon" onclick="toggleImportVisitantesPanel()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="import-instructions">
+            <p><i class="fas fa-info-circle"></i> El archivo Excel debe tener estas columnas (fila 1 = encabezados):</p>
+            <table class="format-table">
+                <thead>
+                    <tr>
+                        <th>dni_visitante</th>
+                        <th>nombre_visitante</th>
+                        <th>telefono</th>
+                        <th>email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>12345678</td>
+                        <td>Carlos Rodríguez</td>
+                        <td>987654321</td>
+                        <td>carlos@correo.com</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="font-size:12px; color:var(--text-secondary); margin-top:6px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <code>telefono</code> y <code>email</code> son opcionales.
+                Si el DNI ya existe, no se crearán duplicados.
+            </p>
+        </div>
+
+        <div class="import-drop-zone" id="dropZoneVisitantes"
+            ondragover="event.preventDefault(); this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')" ondrop="handleVisitantesDrop(event)">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Arrastra tu archivo aquí o</p>
+            <label for="excelVisitantesInput" class="btn-submit"
+                style="cursor:pointer; display:inline-flex; margin-top:6px;">
+                <i class="fas fa-folder-open"></i> Seleccionar archivo
+            </label>
+            <input type="file" id="excelVisitantesInput" accept=".xlsx,.xls,.csv" style="display:none"
+                onchange="handleVisitantesFile(this.files[0])">
+        </div>
+
+        <div id="importVisitantesLog" style="display:none; margin-top:16px;">
+            <div class="import-log-header">
+                <strong><i class="fas fa-terminal"></i> Resultado de importación</strong>
+                <span id="importVisitantesSummary"></span>
+            </div>
+            <div id="importVisitantesLogBody" class="import-log-body"></div>
+        </div>
+    </div>
+
+    <!-- Formulario de registro (oculto por defecto) -->
+    <div id="visitanteFormCard" class="form-card" style="display:none;">
+        <div class="form-card-header">
+            <h3 id="visitanteFormTitle"><i class="fas fa-user-plus"></i> Registrar Visitante</h3>
+            <button type="button" class="btn-icon" onclick="hideVisitanteForm()" title="Cerrar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="visitanteForm" onsubmit="submitVisitanteForm(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="vDni"><i class="fas fa-id-card"></i> DNI *</label>
+                    <input type="text" id="vDni" required placeholder="Ej: 12345678" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label for="vNombre"><i class="fas fa-user"></i> Nombre Completo *</label>
+                    <input type="text" id="vNombre" required placeholder="Ej: Carlos Ríos Pérez" maxlength="100">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="vTelefono"><i class="fas fa-phone"></i> Teléfono</label>
+                    <input type="tel" id="vTelefono" placeholder="Ej: 987654321" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label for="vEmail"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="vEmail" placeholder="Ej: padre@correo.com">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="hideVisitanteForm()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Barra de búsqueda -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 style="font-size:15px; color:var(--text-secondary);">
+                <i class="fas fa-list"></i> Lista de Visitantes Registrados
+            </h3>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="visitanteSearch" placeholder="Buscar por nombre o DNI..."
+                    oninput="filtrarVisitantes()">
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table" id="visitantesTable">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-id-card"></i> DNI</th>
+                        <th><i class="fas fa-user"></i> Nombre</th>
+                        <th><i class="fas fa-phone"></i> Teléfono</th>
+                        <th><i class="fas fa-envelope"></i> Email</th>
+                        <th><i class="fas fa-child"></i> Alumnos</th>
+                        <th><i class="fas fa-cogs"></i> Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="visitantesTableBody">
+                    <!-- Contenido dinámico -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="records-count" id="visitantesCount">0 visitantes</span>
+        </div>
+    </div>
+
+</section>

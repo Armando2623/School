@@ -1,60 +1,58 @@
+// ============================================================
+// registro.js — Lógica del módulo de Registro de Visitas
+// ============================================================
+
+const API_VISITAS = "http://localhost:8080/api/visitas";
+let editingVisitaId = null; // ID de la visita a editar (null = nueva)
+
+/** Construye el payload para el DTO Java DatosRegistroVisita */
 async function registerVisit(event) {
-    event.preventDefault(); // Evita que la página se recargue
+    event.preventDefault();
 
-    // Obtener la fecha y hora por separado para unirlas en LocalDateTime
-    const fechaInput = document.getElementById("visitDate").value;    // Ej: "2026-03-09"
-    const horaInput = document.getElementById("visitTime").value;     // Ej: "14:30"
-    const fechaHoraIngreso = `${fechaInput}T${horaInput}:00`;         // "2026-03-09T14:30:00"
+    const fechaInput = document.getElementById("visitDate").value;
+    const horaInput = document.getElementById("visitTime").value;
+    const fechaHoraIngreso = `${fechaInput}T${horaInput}:00`;
 
-    // 1. Recolectar datos del formulario mapeando EXACTAMENTE a tu DTO de Java
     const visitData = {
         dniVisitante: document.getElementById("documentNumber").value.trim(),
         nombreVisitante: document.getElementById("visitorName").value.trim(),
         motivo: document.getElementById("visitReason").value,
         horaIngreso: fechaHoraIngreso,
-
-        // Asumiendo que guardaremos el id del usuario en un campo oculto al seleccionar "Persona a Visitar"
-        // Convertimos a número porque el DTO espera un envoltorio Long
         usuario_id: parseInt(document.getElementById("usuarioId").value, 10),
-
         estadoRegistro: "REGISTRADO"
     };
 
+    // Si estamos en modo edición → PUT /{id}; si nuevo → POST
+    const url = editingVisitaId ? `${API_VISITAS}/${editingVisitaId}` : API_VISITAS;
+    const method = editingVisitaId ? "PUT" : "POST";
+
     try {
-        // 2. Enviar datos al backend mediante fetch (POST)
-        const response = await fetch("http://localhost:8080/api/visitas", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+        const response = await authFetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(visitData)
         });
 
-        if (!response.ok) {
-            throw new Error(`Error en el servidor: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Error en el servidor: ${response.status}`);
 
-        const data = await response.json();
-        console.log("Visita registrada exitosamente:", data);
+        await response.json();
 
-        // 3. Mostrar mensaje de éxito (puedes usar showToast de app.js si está disponible globalmente)
+        const msg = editingVisitaId ? "Visita actualizada correctamente" : "Visita registrada correctamente";
         if (typeof showToast === 'function') {
-            showToast("Visita registrada correctamente", "success");
+            showToast(msg, "success");
         } else {
-            alert("Visita registrada correctamente");
+            alert(msg);
         }
 
-        // 4. Limpiar formulario
+        editingVisitaId = null;
         resetForm();
 
-        // 5. Redirigir al dashboard y actualizar tabla
         if (typeof navigateTo === 'function') {
             navigateTo("dashboard");
         }
 
     } catch (error) {
         console.error("Error al registrar la visita:", error);
-
         if (typeof showToast === 'function') {
             showToast("Error al conectar con el servidor", "error");
         } else {
@@ -63,12 +61,107 @@ async function registerVisit(event) {
     }
 }
 
+/** Limpia todos los campos del formulario */
 function resetForm() {
     const form = document.getElementById("registerForm");
     if (form) form.reset();
+    // Ocultar el banner de "visitante encontrado"
+    const banner = document.getElementById("visitorFound");
+    if (banner) banner.style.display = "none";
+    // Limpiar el estado del DNI
+    setDniStatus("", "");
 }
 
-// Inicializar autocompletado para "Persona a Visitar" (usuario_id) en vista registro
+// ─── DNI LOOKUP ────────────────────────────────────────────────────────────────
+// Tiempo de espera (ms) antes de hacer la petición después de dejar de escribir
+const DNI_DEBOUNCE_MS = 500;
+let dniDebounceTimer = null;
+
+/** Actualiza el ícono/estado junto al campo DNI */
+function setDniStatus(icon, cssClass) {
+    const statusEl = document.getElementById("dniStatus");
+    if (!statusEl) return;
+    statusEl.className = "dni-status " + cssClass;
+    statusEl.innerHTML = icon ? `<i class="${icon}"></i>` : "";
+}
+
+/**
+ * Rellena automáticamente los campos del formulario con los datos del visitante
+ * encontrado. Solo sobrescribe el nombre, el resto el usuario puede cambiarlo libremente.
+ */
+function autofillFromVisitor(v) {
+    const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val !== undefined && val !== null && val !== "") el.value = val;
+    };
+
+    set("visitorName", v.nombreVisitante || v.nombre || v.name || "");
+
+    // Mostrar banner de confirmación
+    const banner = document.getElementById("visitorFound");
+    const bannerMsg = document.getElementById("visitorFoundMsg");
+    if (banner) {
+        bannerMsg.textContent = `Visitante encontrado: ${v.nombreVisitante || v.nombre || v.name} — datos autocompletados.`;
+        banner.style.display = "flex";
+    }
+
+    setDniStatus("fas fa-check-circle", "found");
+}
+
+/**
+ * Busca en el backend si ya existe un visitante con ese DNI.
+ * Endpoint: GET /api/visitantes/buscar?dni={dni}
+ * Devuelve el visitante (con sus hijos) o null si no existe.
+ */
+async function lookupVisitorByDNI(dni) {
+    try {
+        const response = await authFetch(
+            `http://localhost:8080/api/visitantes/buscar?dni=${encodeURIComponent(dni)}`
+        );
+        if (response.status === 404) return null;  // visitante nuevo
+        if (!response.ok) throw new Error(`Error ${response.status}`);
+        return await response.json();
+    } catch (err) {
+        console.error("Error buscando visitante por DNI:", err);
+        return null;
+    }
+}
+
+/** Inicializa el buscador de visitante por DNI con debounce */
+function setupDniLookup() {
+    const dniInput = document.getElementById("documentNumber");
+    if (!dniInput) return;
+
+    dniInput.addEventListener("input", () => {
+        const dni = dniInput.value.trim();
+
+        // Ocultar banner y limpiar estado al borrar
+        const banner = document.getElementById("visitorFound");
+        if (banner) banner.style.display = "none";
+        setDniStatus("", "");
+
+        clearTimeout(dniDebounceTimer);
+
+        // Solo buscar si tiene al menos 6 caracteres (DNIs peruanos tienen 8)
+        if (dni.length < 6) return;
+
+        // Mostrar spinner mientras espera
+        setDniStatus("fas fa-spinner", "searching");
+
+        dniDebounceTimer = setTimeout(async () => {
+            const visitor = await lookupVisitorByDNI(dni);
+
+            if (visitor) {
+                autofillFromVisitor(visitor);
+            } else {
+                // Visitante nuevo — indicar visualmente pero no bloquear el registro
+                setDniStatus("fas fa-user-plus", "not-found");
+            }
+        }, DNI_DEBOUNCE_MS);
+    });
+}
+
+// ─── AUTOCOMPLETE "PERSONA A VISITAR" ──────────────────────────────────────────
 function setupRegistroAutocomplete() {
     const inputUsuario = document.getElementById("personVisited");
     const suggestionsBox = document.getElementById("suggestions");
@@ -85,8 +178,8 @@ function setupRegistroAutocomplete() {
         }
 
         try {
-            const response = await fetch(
-                `http://localhost:8080/api/visitas/usuarios?search=${texto}`
+            const response = await authFetch(
+                `http://localhost:8080/api/visitas/usuarios?search=${encodeURIComponent(texto)}`
             );
 
             if (!response.ok) throw new Error("Error en la búsqueda");
@@ -105,7 +198,7 @@ function setupRegistroAutocomplete() {
             usuarios.forEach(usuario => {
                 const div = document.createElement("div");
                 div.classList.add("suggestion-item");
-                div.textContent = usuario.nombre; // Ajustar si el API devuelve nombreVisitante o userName
+                div.textContent = usuario.nombre;
 
                 div.onclick = () => {
                     inputUsuario.value = usuario.nombre;
@@ -121,55 +214,53 @@ function setupRegistroAutocomplete() {
         }
     });
 
-    // Cerrar sugerencias al hacer clic fuera
     document.addEventListener("click", function (e) {
-        if (e.target !== inputUsuario && e.target !== suggestionsBox) {
+        if (e.target !== inputUsuario && !suggestionsBox.contains(e.target)) {
             suggestionsBox.innerHTML = "";
         }
     });
 }
 
-// Ejecutar cuando se carga el módulo de registro
-setupRegistroAutocomplete();
-
+// ─── MODO EDICIÓN (desde tabla) ────────────────────────────────────────────────
 function loadVisitorForEditing() {
-    const editId = sessionStorage.getItem('editVisitorId');
-    if (!editId) return; // No hay visitante para editar (es un registro nuevo)
+    const editData = sessionStorage.getItem('editVisitorData');
+    if (!editData) return;
 
-    // Necesitamos el array global 'visitors' de app.js
-    if (typeof visitors !== 'undefined') {
-        const visitor = visitors.find(v => String(v.id) === String(editId));
+    try {
+        const visitor = JSON.parse(editData);
+        editingVisitaId = visitor.id ?? null; // guardar ID para PUT
 
-        if (visitor) {
-            // Llenar formulario (soporta nombres del API y de los datos de ejemplo)
-            document.getElementById('visitorName').value = visitor.nombreVisitante || visitor.nombre || visitor.name || '';
-            document.getElementById('documentType').value = visitor.documentType || 'DNI';
-            document.getElementById('documentNumber').value = visitor.dniVisitante || visitor.documento || visitor.document || '';
-            document.getElementById('visitDate').value = visitor.fecha || visitor.date || '';
-            document.getElementById('visitTime').value = visitor.horaIngreso || visitor.hora_entrada || visitor.timeIn || '';
-            document.getElementById('visitReason').value = visitor.motivo || visitor.reason || '';
-            document.getElementById('personVisited').value = (visitor.usuario ? visitor.usuario.nombre : visitor.persona_visitada) || visitor.person || '';
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (el && val !== undefined && val !== null && val !== "") el.value = val;
+        };
 
-            // Asignamos el ID del usuario al hidden input
-            if (visitor.usuario_id || visitor.usuario?.id) {
-                document.getElementById('usuarioId').value = visitor.usuario_id || visitor.usuario?.id;
-            }
-
-            document.getElementById('department').value = visitor.department || '';
-            document.getElementById('vehiclePlate').value = visitor.vehiclePlate || '';
-            document.getElementById('additionalNotes').value = visitor.notes || '';
-
-            // Cambiar texto del botón a "Actualizar"
-            const btnSubmit = document.querySelector('.btn-submit');
-            if (btnSubmit) {
-                btnSubmit.innerHTML = '<i class="fas fa-save"></i> Actualizar Visita';
-            }
+        set("visitorName", visitor.nombreVisitante || "");
+        set("documentNumber", visitor.dniVisitante || "");
+        set("visitReason", visitor.motivo || "");
+        set("personVisited", visitor.usuario?.nombre || "");
+        if (visitor.usuario?.id) {
+            set("usuarioId", visitor.usuario.id);
         }
+
+        // Extraer fecha y hora de horaIngreso (ISO string)
+        if (visitor.horaIngreso) {
+            const dt = visitor.horaIngreso.split("T");
+            set("visitDate", dt[0] || "");
+            set("visitTime", (dt[1] || "").substring(0, 5));
+        }
+
+        const btnSubmit = document.querySelector('.btn-submit');
+        if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-save"></i> Actualizar Visita';
+
+    } catch (e) {
+        console.error("Error cargando datos de edición:", e);
     }
 
-    // Limpiar el ID tras cargarlo para no afectar a futuros "Nuevos Registros"
-    sessionStorage.removeItem('editVisitorId');
+    sessionStorage.removeItem('editVisitorData');
 }
 
-// Ejecutar hidratación del formulario de edición si aplica
+// ─── INICIALIZACIÓN ─────────────────────────────────────────────────────────────
+setupDniLookup();
+setupRegistroAutocomplete();
 setTimeout(loadVisitorForEditing, 50);

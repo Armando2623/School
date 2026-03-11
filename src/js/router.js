@@ -1,18 +1,39 @@
 function loadPage(page) {
+    // Verificar permisos (auth.js debe estar cargado antes)
+    if (typeof hasPermission === 'function' && !hasPermission(page)) {
+        const app = document.getElementById("app");
+        app.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                        min-height:300px;text-align:center;color:var(--text-secondary);">
+                <i class="fas fa-lock" style="font-size:48px;margin-bottom:16px;color:var(--error-color);"></i>
+                <h2 style="color:var(--text-primary);margin-bottom:8px;">Acceso restringido</h2>
+                <p>Tu rol no tiene permisos para acceder a esta sección.</p>
+            </div>`;
+        return;
+    }
+
     fetch(`pages/${page}.html`)
         .then(r => r.text())
         .then(html => {
             const app = document.getElementById("app");
             app.innerHTML = html;
 
-            // Cargar JS del módulo (evita inyectar el mismo script varias veces)
+            // Páginas que re-ejecutan su JS en cada visita (necesitan re-init)
+            const ALWAYS_RELOAD = ["mensajes"];
+
             const scriptId = `script-${page}`;
+            const existing = document.getElementById(scriptId);
+
+            // Para páginas en ALWAYS_RELOAD, eliminar el script anterior
+            // para que el IIFE de init se ejecute de nuevo
+            if (existing && ALWAYS_RELOAD.includes(page)) {
+                existing.remove();
+            }
+
             if (!document.getElementById(scriptId)) {
                 const script = document.createElement("script");
                 script.id = scriptId;
                 script.src = `js/${page}.js`;
-                script.defer = true;
-                // Si el archivo no existe, no falla la navegación entera, solo se registra en consola.
                 document.body.appendChild(script);
             }
         });
