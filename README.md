@@ -1,8 +1,16 @@
+<<<<<<< HEAD
 # 🏫 SchoolGuard - Sistema de Registro de Visitas Escolares (Frontend)
 
 ¡Bienvenido al repositorio frontend de **SchoolGuard**! Este proyecto es la interfaz de usuario web diseñada para gestionar el registro y control de visitas a instituciones educativas. Está construido de manera ligera y rápida utilizando tecnologías web estándar.
 
 ## ✨ Características Principales
+=======
+# SchoolGuard - Sistema de Registro de Visitas Escolares (Frontend)
+
+¡Bienvenido al repositorio frontend de **SchoolGuard**! Este proyecto es la interfaz de usuario web diseñada para gestionar el registro y control de visitas a instituciones educativas. Está construido de manera ligera y rápida utilizando tecnologías web estándar.
+
+##  Características Principales
+>>>>>>> a07497c3df4dda9be65648bfa009ac820553655d
 
 El frontend está estructurado en diferentes módulos para administrar integralmente la seguridad y acceso en la escuela:
 
@@ -39,7 +47,11 @@ Este proyecto web está desarrollado sin frameworks pesados, enfocado en rendimi
  ┗ 📜 README.md       (Este archivo)
 ```
 
+<<<<<<< HEAD
 ## 🚀 Guía de Instalación y Uso Local
+=======
+##  Guía de Instalación y Uso Local
+>>>>>>> a07497c3df4dda9be65648bfa009ac820553655d
 
 Para levantar este proyecto en tu entorno de desarrollo local, sigue estos pasos:
 
@@ -67,10 +79,18 @@ npm run build
 
 ---
 
+<<<<<<< HEAD
 ## 🤝 Autor
 
 Proyecto mantenido por **SchoolGuard** (Armando2623 / [Tu Nombre Aquí]).
 
 ## 📄 Licencia
+=======
+## Autor
+
+Proyecto mantenido por **SchoolGuard** (Armando2623 / [Armando Ortiz Vegas]).
+
+## Licencia
+>>>>>>> a07497c3df4dda9be65648bfa009ac820553655d
 
 Este proyecto está distribuido bajo la licencia [MIT](https://choosealicense.com/licenses/mit/).
