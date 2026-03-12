@@ -5,7 +5,7 @@
   "main": "src/js/app.js",
   "scripts": {
     "dev": "npx serve src",
-    "build": "robocopy src dist /E /NFL /NDL /NJH /NJS & exit 0",
+    "build": "node -e \"const fs = require('fs'); if (fs.existsSync('dist')) fs.rmSync('dist', { recursive: true, force: true }); fs.cpSync('src', 'dist', { recursive: true });\"",
     "test": "node test.js"
   },
   "keywords": [
