@@ -14,5 +14,6 @@
     "management"
   ],
   "author": "SchoolGuard",
-  "license": "MIT"
+  "license": "MIT",
+  "outputDirectory": "dist"
 }
