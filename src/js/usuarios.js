@@ -1,35 +1,37 @@
-// ================================================================
-// usuarios.js — Gestión de Usuarios del Sistema
-// Solo accesible para rol ADMINISTRADOR
-// ================================================================
-
-const API_USUARIOS = "http://localhost:8080/api/usuarios";
+// ============================================================
+// usuarios.js — Gestión de usuarios (ADMINISTRADOR)
+// ============================================================
 
 let todosLosUsuarios = [];
-let editingUsuarioId = null; // null = nuevo, number = editar
+let editingUserUuid = null;
 
-// ─── Cargar y renderizar tabla ────────────────────────────────
+// ─── CARGA INICIAL ─────────────────────────────────────────
 async function cargarUsuarios() {
     const tbody = document.getElementById("usuariosTableBody");
+    const countEl = document.getElementById("usuariosCount");
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="5" class="loading-row">
-        <i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>`;
 
     try {
-        const res = await authFetch(API_USUARIOS);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        todosLosUsuarios = await res.json();
+        const { data, error } = await supabaseClient
+            .from('usuarios')
+            .select('*')
+            .order('nombre', { ascending: true });
+
+        if (error) throw error;
+        todosLosUsuarios = data;
     } catch (err) {
         console.error("Error cargando usuarios:", err);
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--error-color);">
-            <i class="fas fa-exclamation-triangle"></i> No se pudo cargar la lista de usuarios.</td></tr>`;
-        return;
+        if (typeof showToast === 'function') showToast("No se pudo cargar los usuarios", "error");
+        todosLosUsuarios = [];
     }
 
     renderUsuariosTable();
+    if (countEl) countEl.textContent = `${todosLosUsuarios.length} usuarios`;
 }
 
+// ─── RENDER TABLA ──────────────────────────────────────────
 function renderUsuariosTable() {
     const tbody = document.getElementById("usuariosTableBody");
     if (!tbody) return;
@@ -43,37 +45,28 @@ function renderUsuariosTable() {
     };
 
     if (todosLosUsuarios.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">
-            Sin usuarios registrados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">Sin usuarios registrados.</td></tr>`;
         return;
     }
 
-    const currentUserId = localStorage.getItem('sg_id');
-
     tbody.innerHTML = todosLosUsuarios.map(u => {
         const rol = rolLabels[u.rol] || { label: u.rol, icon: "fas fa-user", css: "" };
-        const isSelf = String(u.id) === String(currentUserId);
         return `
         <tr>
-            <td>${u.id}</td>
-            <td><strong>${u.nombre}</strong></td>
-            <td><code style="background:rgba(0,0,0,0.06);padding:2px 6px;border-radius:4px;">${u.usuario}</code></td>
+            <td><strong>${u.usuario}</strong></td>
+            <td>${u.nombre}</td>
             <td>
                 <span class="status-badge ${rol.css}" style="display:inline-flex;align-items:center;gap:5px;">
                     <i class="${rol.icon}"></i> ${rol.label}
                 </span>
             </td>
+            <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="btn-action edit"
-                            onclick="editarUsuario(${u.id})"
-                            title="Editar">
+                    <button class="btn-action edit" onclick="editarUsuario('${u.id}')" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn-action delete"
-                            onclick="confirmarEliminarUsuario(${u.id}, '${u.nombre}')"
-                            title="Eliminar"
-                            ${isSelf ? 'disabled title="No puede eliminar su propio usuario"' : ''}>
+                    <button class="btn-action delete" onclick="confirmarEliminarUsuario('${u.id}', '${u.nombre}')" title="Eliminar">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -82,115 +75,99 @@ function renderUsuariosTable() {
     }).join('');
 }
 
-// ─── Formulario Nuevo Usuario ─────────────────────────────────
-function showAddUsuarioForm() {
-    editingUsuarioId = null;
-    document.getElementById("usuarioFormCard").style.display = "block";
-    document.getElementById("usuarioForm").reset();
-    document.getElementById("uPassword").required = true;
-    document.getElementById("uPassword").placeholder = "Mínimo 6 caracteres";
-    document.getElementById("usuarioFormTitle").innerHTML =
-        '<i class="fas fa-user-plus"></i> Nuevo Usuario';
-    document.getElementById("btnSubmitUsuario").innerHTML =
-        '<i class="fas fa-save"></i> Guardar Usuario';
-    document.getElementById("usuarioFormCard").scrollIntoView({ behavior: "smooth" });
+// ─── FILTRAR ───────────────────────────────────────────────
+function filtrarUsuarios() {
+    const q = document.getElementById("usuarioSearch").value.toLowerCase();
+    const filtrados = todosLosUsuarios.filter(u =>
+        u.nombre.toLowerCase().includes(q) ||
+        u.usuario.toLowerCase().includes(q)
+    );
+    // Para simplificar, recargamos la tabla con la lista filtrada (usando una variable temporal)
+    const originalList = todosLosUsuarios;
+    todosLosUsuarios = filtrados;
+    renderUsuariosTable();
+    todosLosUsuarios = originalList;
+    document.getElementById("usuariosCount").textContent = `${filtrados.length} usuarios`;
 }
 
-function editarUsuario(id) {
-    const u = todosLosUsuarios.find(x => x.id === id);
-    if (!u) return;
-
-    editingUsuarioId = id;
-
-    document.getElementById("uNombre").value = u.nombre;
-    document.getElementById("uUsuario").value = u.usuario;
-    document.getElementById("uRol").value = u.rol;
-    document.getElementById("uPassword").value = ""; // vacío = no cambiar
-    document.getElementById("uPassword").required = false;
-    document.getElementById("uPassword").placeholder = "Dejar vacío para no cambiar";
-
-    document.getElementById("usuarioFormTitle").innerHTML =
-        `<i class="fas fa-user-edit"></i> Editar Usuario — ${u.nombre}`;
-    document.getElementById("btnSubmitUsuario").innerHTML =
-        '<i class="fas fa-save"></i> Actualizar Usuario';
-
+// ─── FORMULARIO ────────────────────────────────────────────
+function showAddUsuarioForm() {
+    editingUserUuid = null;
     document.getElementById("usuarioFormCard").style.display = "block";
-    document.getElementById("usuarioFormCard").scrollIntoView({ behavior: "smooth" });
+    document.getElementById("usuarioForm").reset();
+    document.getElementById("usuarioFormTitle").innerHTML = '<i class="fas fa-user-plus"></i> Nuevo Usuario';
+    document.getElementById("btnSubmitUsuario").innerHTML = '<i class="fas fa-save"></i> Guardar Usuario';
 }
 
 function hideUsuarioForm() {
     document.getElementById("usuarioFormCard").style.display = "none";
-    editingUsuarioId = null;
+    editingUserUuid = null;
 }
 
+// ─── GUARDAR ───────────────────────────────────────────────
 async function submitUsuarioForm(event) {
     event.preventDefault();
 
-    const btn = document.getElementById("btnSubmitUsuario");
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-
-    const data = {
-        nombre: document.getElementById("uNombre").value.trim(),
-        usuario: document.getElementById("uUsuario").value.trim(),
-        contraseña: document.getElementById("uPassword").value,
-        rol: document.getElementById("uRol").value
-    };
-
-    const url = editingUsuarioId ? `${API_USUARIOS}/${editingUsuarioId}` : API_USUARIOS;
-    const method = editingUsuarioId ? "PUT" : "POST";
-    const msg = editingUsuarioId ? "Usuario actualizado correctamente" : "Usuario creado correctamente";
+    const nombre = document.getElementById("uNombre").value.trim();
+    const usuario = document.getElementById("uUsuario").value.trim();
+    const rol = document.getElementById("uRol").value;
+    const pass = document.getElementById("uPassword").value;
 
     try {
-        const res = await authFetch(url, { method, body: JSON.stringify(data) });
-
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error || `Error ${res.status}`);
+        if (editingUserUuid) {
+            const { error } = await supabaseClient
+                .from('usuarios')
+                .update({ nombre, rol })
+                .eq('id', editingUserUuid);
+            
+            if (error) throw error;
+            showToast("Usuario actualizado", "success");
+        } else {
+            // Nota: El registro de nuevos usuarios suele requerir auth.signUp
+            const { data, error } = await supabaseClient.auth.signUp({
+                email: usuario,
+                password: pass,
+                options: { data: { nombre, rol } }
+            });
+            if (error) throw error;
+            
+            // Insertar perfil manualmente si no hay trigger
+            await supabaseClient.from('usuarios').insert([{ id: data.user.id, nombre, usuario, rol }]);
+            showToast("Usuario invitado", "success");
         }
-
-        editingUsuarioId = null;
         hideUsuarioForm();
-        if (typeof showToast === 'function') showToast(msg, "success");
-        await cargarUsuarios();
-
+        cargarUsuarios();
     } catch (err) {
-        if (typeof showToast === 'function') showToast(err.message, "error");
-        else alert(err.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> Guardar Usuario';
+        showToast("Error: " + err.message, "error");
     }
 }
 
-// ─── Eliminar ─────────────────────────────────────────────────
+// ─── EDITAR ────────────────────────────────────────────────
+function editarUsuario(id) {
+    const u = todosLosUsuarios.find(x => x.id === id);
+    if (!u) return;
+
+    editingUserUuid = id;
+    document.getElementById("uNombre").value = u.nombre;
+    document.getElementById("uUsuario").value = u.usuario;
+    document.getElementById("uRol").value = u.rol;
+
+    document.getElementById("usuarioFormTitle").innerHTML = `<i class="fas fa-user-edit"></i> Editar Usuario`;
+    document.getElementById("usuarioFormCard").style.display = "block";
+}
+
+// ─── ELIMINAR ──────────────────────────────────────────────
 async function confirmarEliminarUsuario(id, nombre) {
-    if (!confirm(`¿Eliminar al usuario "${nombre}"? Esta acción no se puede deshacer.`)) return;
-
+    if (!confirm(`¿Eliminar a ${nombre}?`)) return;
     try {
-        const res = await authFetch(`${API_USUARIOS}/${id}`, { method: "DELETE" });
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-
-        if (typeof showToast === 'function') showToast("Usuario eliminado", "success");
-        await cargarUsuarios();
-
+        const { error } = await supabaseClient.from('usuarios').delete().eq('id', id);
+        if (error) throw error;
+        showToast("Usuario eliminado", "success");
+        cargarUsuarios();
     } catch (err) {
-        if (typeof showToast === 'function') showToast("Error al eliminar el usuario", "error");
+        showToast("Error al eliminar", "error");
     }
 }
 
-// ─── Toggle contraseña ────────────────────────────────────────
-function toggleUPwd() {
-    const input = document.getElementById("uPassword");
-    const icon = document.getElementById("uEyeIcon");
-    if (input.type === "password") {
-        input.type = "text";
-        icon.className = "fas fa-eye-slash";
-    } else {
-        input.type = "password";
-        icon.className = "fas fa-eye";
-    }
-}
-
-// ─── Init ─────────────────────────────────────────────────────
+// ─── INIT ──────────────────────────────────────────────────
 cargarUsuarios();

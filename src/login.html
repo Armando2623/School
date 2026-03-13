@@ -186,20 +186,18 @@
 
     </div>
 
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+
     <script>
-        const API_BASE = "http://localhost:8080";
-
-        // Si ya hay sesión válida, ir al app directamente
-        if (localStorage.getItem('sg_token')) {
-            window.location.replace('index.html');
-        }
-
+        // Supabase login logic
         async function handleLogin(event) {
             event.preventDefault();
 
             const btn = document.getElementById('btnLogin');
             const banner = document.getElementById('errorBanner');
-            const usuario = document.getElementById('loginUsuario').value.trim();
+            const email = document.getElementById('loginUsuario').value.trim(); // Supabase usa Email mejor que Username por defecto
             const pass = document.getElementById('loginPassword').value;
 
             banner.classList.remove('show');
@@ -207,29 +205,23 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Autenticando...';
 
             try {
-                const res = await fetch(`${API_BASE}/api/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuario, contraseña: pass })
+                // Supabase Auth: requiere email or phone. 
+                // Si preferimos usar username, necesitamos una tabla de mapeo, 
+                // pero lo estándar es email.
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email, 
+                    password: pass
                 });
 
-                if (!res.ok) throw new Error('Credenciales inválidas');
-
-                const data = await res.json();
-
-                localStorage.setItem('sg_token', data.token);
-                localStorage.setItem('sg_nombre', data.nombre);
-                localStorage.setItem('sg_usuario', data.usuario);
-                localStorage.setItem('sg_rol', data.rol);
-                localStorage.setItem('sg_id', data.id);
+                if (error) throw error;
 
                 window.location.replace('index.html');
 
             } catch (err) {
-                document.getElementById('errorMsg').textContent =
-                    err.message === 'Credenciales inválidas'
-                        ? 'Usuario o contraseña incorrectos.'
-                        : 'No se pudo conectar con el servidor.';
+                document.getElementById('errorMsg').textContent = 
+                    err.message.includes('Invalid login') 
+                        ? 'Usuario o contraseña incorrectos.' 
+                        : 'Error: ' + err.message;
                 banner.classList.add('show');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';

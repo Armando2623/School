@@ -1,88 +1,71 @@
 // ================================================================
-// auth.js — Gestión de sesión JWT para SchoolGuard
+// auth.js — Gestión de sesión Supabase para SchoolGuard
 // ================================================================
 
-const AUTH_BASE = "http://localhost:8080";
+// ─── Getters de Sesión ────────────────────────────────────────
+/**
+ * Obtiene la sesión actual de Supabase.
+ */
+async function getSession() {
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) return null;
+    return data.session;
+}
 
-// ─── Claves de localStorage ────────────────────────────────────
-const SK_TOKEN = "sg_token";
-const SK_NOMBRE = "sg_nombre";
-const SK_USUARIO = "sg_usuario";
-const SK_ROL = "sg_rol";
-const SK_ID = "sg_id";
+/**
+ * Obtiene el perfil del usuario desde la tabla 'usuarios' vinculada al auth.
+ */
+async function getUserProfile() {
+    const session = await getSession();
+    if (!session) return null;
 
-// ─── Getters ───────────────────────────────────────────────────
-function getToken() { return localStorage.getItem(SK_TOKEN); }
-function getNombre() { return localStorage.getItem(SK_NOMBRE); }
-function getUsuario() { return localStorage.getItem(SK_USUARIO); }
-function getRol() { return localStorage.getItem(SK_ROL); }
-function getUserId() { return localStorage.getItem(SK_ID); }
+    const { data, error } = await supabaseClient
+        .from('usuarios')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+    
+    if (error) return null;
+    return data;
+}
 
 // ─── Verificar sesión ─────────────────────────────────────────
-/**
- * Si no hay token, redirige a login.html.
- * Debe llamarse al inicio de index.html.
- */
-function requireAuth() {
-    if (!getToken()) {
+async function requireAuth() {
+    const session = await getSession();
+    if (!session) {
         window.location.replace("login.html");
     }
 }
 
 // ─── Cerrar sesión ────────────────────────────────────────────
-function logout() {
+async function logout() {
     if (typeof chatDisconnect === 'function') chatDisconnect();
-    [SK_TOKEN, SK_NOMBRE, SK_USUARIO, SK_ROL, SK_ID].forEach(k => localStorage.removeItem(k));
+    await supabaseClient.auth.signOut();
     window.location.replace("login.html");
 }
 
-// ─── Fetch autenticado ────────────────────────────────────────
-/**
- * Igual que fetch() pero agrega Authorization: Bearer <token>.
- * Si el servidor responde 401/403, cierra sesión automáticamente.
- */
-async function authFetch(url, options = {}) {
-    const token = getToken();
-    const headers = {
-        "Content-Type": "application/json",
-        ...(options.headers || {}),
-        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-    };
-
-    const response = await fetch(url, { ...options, headers });
-
-    if (response.status === 401 || response.status === 403) {
-        logout();
-        throw new Error("Sesión expirada o sin permisos.");
-    }
-
-    return response;
-}
-
 // ─── Permisos por rol ─────────────────────────────────────────
-/**
- * Devuelve true si el usuario actual puede acceder a la página indicada.
- * Las páginas no listadas están accesibles para todos los roles.
- */
 const PAGINAS_POR_ROL = {
     visitantes: ["ADMINISTRADOR", "SECRETARIA"],
     alumnos: ["ADMINISTRADOR", "SECRETARIA"],
     registro: ["ADMINISTRADOR", "PORTERO", "SECRETARIA"],
     reports: ["ADMINISTRADOR", "SECRETARIA", "DIRECTOR"],
     usuarios: ["ADMINISTRADOR"],
-    // dashboard y visits → todos los roles
 };
 
-function hasPermission(page) {
+async function hasPermission(page) {
+    const profile = await getUserProfile();
+    if (!profile) return false;
+    
     const allowed = PAGINAS_POR_ROL[page];
-    if (!allowed) return true; // sin restricción
-    return allowed.includes(getRol());
+    if (!allowed) return true;
+    return allowed.includes(profile.rol);
 }
 
 // ─── Init: exponer datos del usuario en el sidebar ────────────
-function initUserInfo() {
-    const nombre = getNombre() || "Usuario";
-    const rolStr = getRol() || "";
+async function initUserInfo() {
+    const profile = await getUserProfile();
+    if (!profile) return;
 
     const rolLabels = {
         ADMINISTRADOR: "Administrador",
@@ -94,6 +77,6 @@ function initUserInfo() {
 
     const nameEl = document.querySelector(".user-name");
     const roleEl = document.querySelector(".user-role");
-    if (nameEl) nameEl.textContent = nombre;
-    if (roleEl) roleEl.textContent = rolLabels[rolStr] || rolStr;
+    if (nameEl) nameEl.textContent = profile.nombre;
+    if (roleEl) roleEl.textContent = rolLabels[profile.rol] || profile.rol;
 }

@@ -6,132 +6,15 @@
 // ========================================
 // Datos Iniciales y Estado de la Aplicación
 // ========================================
-async function loadVisits() {
-    const res = await fetch("/api/visita");
-    const data = await res.json();
-
-    const tbody = document.getElementById("visitsTable");
-    tbody.innerHTML = "";
-
-    data.forEach(v => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${v.id}</td>
-                <td>${v.nombre}</td>
-                <td>${v.documento}</td>
-                <td>${v.persona_visitada}</td>
-                <td>${v.fecha}</td>
-                <td>${v.hora_entrada}</td>
-                <td>
-                    <button onclick="deleteVisit(${v.id})">
-                        Eliminar
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-}
+ 
 // Datos de ejemplo para el sistema
-const initialVisitors = [
-    {
-        id: 1,
-        name: "María Elena Rodríguez",
-        documentType: "DNI",
-        document: "12345678A",
-        reason: "Reunión Padres",
-        person: "Prof. Juan Martínez",
-        department: "Secretaría",
-        date: "2026-01-14",
-        timeIn: "08:15",
-        timeOut: "",
-        status: "active",
-        vehiclePlate: "ABC-1234",
-        notes: "Reunión sobre rendimiento académico"
-    },
-    {
-        id: 2,
-        name: "Carlos Alberto López",
-        documentType: "DNI",
-        document: "87654321B",
-        reason: "Proveedor",
-        person: "Dept. Mantenimiento",
-        department: "Mantenimiento",
-        date: "2026-01-14",
-        timeIn: "09:30",
-        timeOut: "",
-        status: "active",
-        vehiclePlate: "XYZ-5678",
-        notes: "Entrega de materiales de limpieza"
-    },
-    {
-        id: 3,
-        name: "Ana María Fernández",
-        documentType: "Pasaporte",
-        document: "P12345678",
-        reason: "Evento Escolar",
-        person: "Coordinación",
-        department: "Administración",
-        date: "2026-01-14",
-        timeIn: "10:00",
-        timeOut: "12:30",
-        status: "checked-out",
-        vehiclePlate: "",
-        notes: "Charla sobre nutrición infantil"
-    },
-    {
-        id: 4,
-        name: "Roberto García Mendoza",
-        documentType: "DNI",
-        document: "23456789C",
-        reason: "Entrevista",
-        person: "Dirección",
-        department: "Dirección",
-        date: "2026-01-13",
-        timeIn: "14:00",
-        timeOut: "15:30",
-        status: "checked-out",
-        vehiclePlate: "DEF-9012",
-        notes: "Entrevista para puesto de docente"
-    },
-    {
-        id: 5,
-        name: "Laura Sánchez Torres",
-        documentType: "DNI",
-        document: "34567890D",
-        reason: "Reunión Padres",
-        person: "Prof. María López",
-        department: "Aulas",
-        date: "2026-01-14",
-        timeIn: "11:00",
-        timeOut: "",
-        status: "active",
-        vehiclePlate: "GHI-3456",
-        notes: ""
-    }
-];
+ 
 
-// Personal del colegio para autocompletar
-const schoolStaff = [
-    "Prof. Juan Martínez",
-    "Prof. María López",
-    "Prof. Carlos García",
-    "Prof. Ana Rodríguez",
-    "Lic. Pedro Sánchez",
-    "Ing. Laura Díaz",
-    "Secretaría",
-    "Dirección",
-    "Administración",
-    "Biblioteca",
-    "Coordinación",
-    "Dept. Mantenimiento",
-    "Dept. Cocina"
-];
-
-// Estado global de la aplicación
+// Personal del colegio para autocompletar (ahora se traen de Supabase)
 let visitors = [];
 let currentPage = 1;
 const itemsPerPage = 10;
-let sortColumn = 'id';
+let sortColumn = 'created_at';
 let sortDirection = 'desc';
 let editingId = null;
 
@@ -201,12 +84,16 @@ function setupSidebarUI() {
 // Cargar visitantes desde la API (con fallback a datos iniciales si el backend no responde)
 async function loadVisitors() {
     try {
-        const response = await authFetch("http://localhost:8080/api/visitas");
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        visitors = await response.json();
+        const { data, error } = await supabaseClient
+            .from('visitas')
+            .select('*, usuario:usuarios(*)')
+            .order('hora_ingreso', { ascending: false });
+
+        if (error) throw error;
+        visitors = data;
     } catch (error) {
-        console.warn("Backend no disponible, usando datos de ejemplo:", error.message);
-        visitors = [...initialVisitors];
+        console.error("Error cargando visitas:", error);
+        visitors = [];
     } finally {
         renderTable();
         updateStats();
@@ -355,132 +242,59 @@ function setupSidebarToggle() {
 
 
 async function renderTable() {
-    try {
-        const response = await authFetch("http://localhost:8080/api/visitas");
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        visitors = await response.json();
-    } catch (error) {
-        console.warn("Backend no disponible, usando datos de ejemplo:", error.message);
-        visitors = [...initialVisitors];
-    }
-
-    updateStats();
-
     const tbody = document.getElementById('visitsTableBody');
     if (!tbody) return;
 
-    // Evitar error si filtros no existen
-    const filterStatusElement = document.getElementById('filterStatus');
-    const searchInputElement = document.getElementById('searchInput');
-
-    const filterStatus = filterStatusElement ? filterStatusElement.value : 'all';
-    const searchTerm = searchInputElement
-        ? searchInputElement.value.toLowerCase()
-        : '';
-
-    if (!Array.isArray(visitors)) return;
-
-    // ── Fecha de hoy como string "YYYY-MM-DD" ──────────────────
+    const filterStatus = document.getElementById('filterStatus')?.value || 'all';
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
     const todayStr = new Date().toISOString().slice(0, 10);
-
-    // ── ¿Estamos en el dashboard? ──────────────────────────────
     const enDashboard = (location.hash === '' || location.hash === '#dashboard');
 
-    // ── Helper: convierte horaIngreso (array o ISO) a "HH:mm" ─
-    function formatHora(raw) {
-        if (!raw) return '--:--';
-        // Jackson puede enviar un array [año, mes, dia, hora, min, seg, nano]
-        if (Array.isArray(raw)) {
-            const h = String(raw[3] ?? 0).padStart(2, '0');
-            const m = String(raw[4] ?? 0).padStart(2, '0');
-            return `${h}:${m}`;
-        }
-        // O un string ISO "2024-03-11T09:30:00"
-        const d = new Date(raw);
-        if (!isNaN(d)) {
-            return d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false });
-        }
-        // Fallback: devolver tal cual (puede ser "09:30:00")
-        return String(raw).slice(0, 5);
-    }
-
-    // ── Helper: extrae "YYYY-MM-DD" de horaIngreso ─────────────
-    function extractFecha(raw) {
-        if (!raw) return '';
-        if (Array.isArray(raw)) {
-            const y = raw[0], mo = String(raw[1]).padStart(2, '0'), d = String(raw[2]).padStart(2, '0');
-            return `${y}-${mo}-${d}`;
-        }
-        return String(raw).slice(0, 10);
-    }
-
-    // ===== FILTRAR VISITAS =====
     let filteredVisitors = visitors.filter(v => {
-
-        const status = (v.estadoRegistro || '');
-        const nombre = (v.nombreVisitante || '').toLowerCase();
-        const documento = (v.dniVisitante || '').toLowerCase();
-        const persona_visitada = (v.usuario?.nombre || '').toLowerCase();
+        const status = v.estado_registro || '';
+        const nombre = (v.nombre_visitante || '').toLowerCase();
+        const documento = (v.dni_visitante || '').toLowerCase();
+        const persona = (v.usuario?.nombre || '').toLowerCase();
         const motivo = (v.motivo || '').toLowerCase();
 
-        const matchesStatus =
-            filterStatus === 'all' ||
-            status === filterStatus;
-
-        const matchesSearch =
-            nombre.includes(searchTerm) ||
-            documento.includes(searchTerm) ||
-            persona_visitada.includes(searchTerm) ||
-            motivo.includes(searchTerm);
-
-        // En el dashboard solo mostrar los registros de HOY
-        const matchesDate = enDashboard
-            ? extractFecha(v.horaIngreso) === todayStr
-            : true;
+        const matchesStatus = filterStatus === 'all' || status === filterStatus;
+        const matchesSearch = nombre.includes(searchTerm) || documento.includes(searchTerm) || 
+                             persona.includes(searchTerm) || motivo.includes(searchTerm);
+        const matchesDate = enDashboard ? (v.hora_ingreso || '').startsWith(todayStr) : true;
 
         return matchesStatus && matchesSearch && matchesDate;
     });
 
-    // ===== ACTUALIZAR CONTADOR =====
     const recordsCountEl = document.getElementById('recordsCount');
     if (recordsCountEl) {
-        const label = enDashboard ? 'registros de hoy' : 'registros';
-        recordsCountEl.textContent = `${filteredVisitors.length} ${label}`;
+        recordsCountEl.textContent = `${filteredVisitors.length} ${enDashboard ? 'hoy' : 'registros'}`;
     }
 
-    // ===== TABLA VACÍA =====
     if (filteredVisitors.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="9">
-                    ${enDashboard ? 'No hay registros de hoy' : 'No hay registros'}
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No hay registros</td></tr>`;
         return;
     }
 
-    // ===== RENDERIZAR TABLA =====
     tbody.innerHTML = filteredVisitors.map(v => `
         <tr>
-            <td>${v.id ?? ''}</td>
-            <td>${v.nombreVisitante ?? ''}</td>
-            <td>${v.dniVisitante ?? ''}</td>
-            <td>${v.motivo ?? ''}</td>
-            <td>${v.usuario?.nombre ?? ''}</td>
-            <td>${formatHora(v.horaIngreso)}</td>
-            <td>${v.estadoRegistro ?? ''}</td>
+            <td>${v.id}</td>
+            <td>${v.nombre_visitante}</td>
+            <td>${v.dni_visitante}</td>
+            <td>${v.motivo || ''}</td>
+            <td>${v.usuario?.nombre || '—'}</td>
+            <td>${v.hora_ingreso ? new Date(v.hora_ingreso).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}</td>
+            <td><span class="status-badge ${v.estado_registro === 'REGISTRADO' ? 'active' : 'finished'}">${v.estado_registro}</span></td>
             <td>
                 <div class="action-buttons">
-                    ${v.estado === '1' ? `
-                        <button class="btn-action checkout" onclick="checkoutVisitor(${v.id})" title="Check-out">
+                    ${v.estado_registro === 'REGISTRADO' ? `
+                        <button class="btn-action checkout" onclick="checkoutVisitor('${v.id}')" title="Check-out">
                             <i class="fas fa-sign-out-alt"></i>
                         </button>
                     ` : ''}
-                    <button class="btn-action edit" onclick="editVisitor(${v.id})" title="Editar">
+                    <button class="btn-action edit" onclick="editVisitor('${v.id}')" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn-action view" onclick="viewVisitor(${v.id})" title="Ver detalles">
+                    <button class="btn-action view" onclick="viewVisitor('${v.id}')" title="Detalles">
                         <i class="fas fa-eye"></i>
                     </button>
                 </div>
@@ -633,55 +447,34 @@ async function quickRegister(event) {
     const nombre = document.getElementById('quickName').value.trim();
     const documento = document.getElementById('quickDocument').value.trim();
     const motivo = document.getElementById('quickReason').value;
-    const persona_visitada = document.getElementById('quickPerson').value.trim();
-    const usuarioId = document.getElementById('usuarioId').value; // Del input oculto que ya configuramos en app.js
+    const persona = document.getElementById('quickPerson').value.trim();
+    const usuarioId = document.getElementById('usuarioId').value;
 
-    if (!nombre || !documento || !motivo || !persona_visitada || !usuarioId) {
-        showToast('Por favor, complete todos los campos y seleccione un usuario de la lista', 'error');
+    if (!nombre || !documento || !motivo || !persona || !usuarioId) {
+        showToast('Complete todos los campos', 'warning');
         return;
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const hours = String(new Date().getHours()).padStart(2, '0');
-    const minutes = String(new Date().getMinutes()).padStart(2, '0');
-    const fechaHoraIngreso = `${today}T${hours}:${minutes}:00`;
-
+    const now = new Date().toISOString();
     const visitData = {
-        dniVisitante: documento,
-        nombreVisitante: nombre,
+        dni_visitante: documento,
+        nombre_visitante: nombre,
         motivo: motivo,
-        horaIngreso: fechaHoraIngreso,
-        usuario_id: parseInt(usuarioId, 10),
-        estadoRegistro: "REGISTRADO"
+        hora_ingreso: now,
+        usuario_id: usuarioId,
+        estado_registro: "REGISTRADO"
     };
 
     try {
-        const response = await authFetch("http://localhost:8080/api/visitas", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(visitData)
-        });
-
-        if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
-
-        await response.json();
+        const { error } = await supabaseClient.from('visitas').insert([visitData]);
+        if (error) throw error;
 
         closeRegisterModal();
-        showToast(`${nombre} ha sido registrado exitosamente`, 'success');
-
-        // Refrescar tabla en background
-        renderTable();
-
-        // Limpiar inputs
-        document.getElementById('quickName').value = '';
-        document.getElementById('quickDocument').value = '';
-        document.getElementById('quickReason').value = '';
-        document.getElementById('quickPerson').value = '';
-        document.getElementById('usuarioId').value = '';
-
+        showToast(`${nombre} registrado`, 'success');
+        loadVisitors();
     } catch (error) {
-        console.error("Error en registro rápido:", error);
-        showToast('Error al conectar con el backend', 'error');
+        console.error("Error:", error);
+        showToast('Error al registrar', 'error');
     }
 }
 
@@ -744,30 +537,28 @@ function viewVisitor(id) {
 }
 
 // Check-out de visitante
-function checkoutVisitor(id) {
-    const visitor = visitors.find(v => v.id === id);
+async function checkoutVisitor(id) {
+    const visitor = visitors.find(v => v.id == id);
     if (!visitor) return;
 
-    const nombre = visitor.nombreVisitante || visitor.nombre || visitor.name || 'Visitante';
+    if (!confirm(`¿Registrar salida de ${visitor.nombre_visitante}?`)) return;
 
-    const message = `¿Realizar check-out de <strong>${escapeHtml(nombre)}</strong>?<br>
-                     Hora de salida: ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+    const now = new Date().toISOString();
+    try {
+        const { error } = await supabaseClient
+            .from('visitas')
+            .update({ 
+                hora_salida: now, 
+                estado_registro: 'FINALIZADO' 
+            })
+            .eq('id', id);
 
-    showConfirmModal('Confirmar Salida', message, 'Cancelar', () => {
-        const hours = String(new Date().getHours()).padStart(2, '0');
-        const minutes = String(new Date().getMinutes()).padStart(2, '0');
-
-        visitor.horaSalida = `${hours}:${minutes}`;
-        visitor.timeOut = visitor.horaSalida;
-        visitor.estadoRegistro = 'Finalizado';
-        visitor.estado = '0';
-        visitor.status = 'checked-out';
-
-        saveVisitors();
-        renderTable();
-        updateStats();
-        showToast(`${visitor.name} ha registrado su salida`, 'success');
-    });
+        if (error) throw error;
+        showToast("Salida registrada", "success");
+        loadVisitors();
+    } catch (error) {
+        showToast("Error", "error");
+    }
 }
 
 // ========================================
@@ -860,37 +651,14 @@ function showToast(message, type = 'info') {
 
 function updateStats() {
     const today = new Date().toISOString().split('T')[0];
-    const todayVisitors = visitors.filter(v => v.horaIngreso && v.horaIngreso.startsWith(today));
+    const todayVisitors = visitors.filter(v => (v.hora_ingreso || '').startsWith(today));
 
-    // Visitas activas
-    const activeVisitors = todayVisitors.filter(
-        v => v.estadoRegistro === "REGISTRADO"
-    ).length;
+    const activeCount = todayVisitors.filter(v => v.estado_registro === 'REGISTRADO').length;
+    const finishedCount = todayVisitors.filter(v => v.estado_registro === 'FINALIZADO').length;
 
-    const el = document.getElementById("activeVisitors");
-
-    if (el !== null) {
-        el.textContent = activeVisitors;
-    }
-
-    // Visitas de hoy
-    const todayVisitsEl = document.getElementById('todayVisits');
-    if (todayVisitsEl) todayVisitsEl.textContent = todayVisitors.length;
-
-    // Salidas de hoy
-    const checkedOut = todayVisitors.filter(v => v.status === 'checked-out').length;
-    const checkedOutEl = document.getElementById('checkedOut');
-    if (checkedOutEl) checkedOutEl.textContent = checkedOut;
-
-    // Calcular promedio semanal
-    const last7Days = getLast7Days();
-    let totalLast7Days = 0;
-    last7Days.forEach(day => {
-        totalLast7Days += visitors.filter(v => v.date === day).length;
-    });
-    const weeklyAvg = Math.round(totalLast7Days / 7);
-    const weeklyAvgEl = document.getElementById('weeklyAvg');
-    if (weeklyAvgEl) weeklyAvgEl.textContent = weeklyAvg;
+    if (document.getElementById("activeVisitors")) document.getElementById("activeVisitors").textContent = activeCount;
+    if (document.getElementById('todayVisits')) document.getElementById('todayVisits').textContent = todayVisitors.length;
+    if (document.getElementById('checkedOut')) document.getElementById('checkedOut').textContent = finishedCount;
 }
 
 function getLast7Days() {
@@ -1056,36 +824,38 @@ function setupUsuarioAutocomplete() {
     const suggestionsBox = document.getElementById("suggestions");
     const usuarioIdInput = document.getElementById("usuarioId");
 
-    if (!inputUsuario || !suggestionsBox) return; // el modal aún no está en el DOM
+    if (!inputUsuario || !suggestionsBox) return;
 
     inputUsuario.addEventListener("input", async function () {
         const texto = inputUsuario.value.trim();
-
         if (texto.length < 2) {
             suggestionsBox.innerHTML = "";
             return;
         }
 
         try {
-            const response = await authFetch(
-                `http://localhost:8080/api/visitas/usuarios?search=${texto}`
-            );
-            const usuarios = await response.json();
+            const { data: usuarios, error } = await supabaseClient
+                .from('usuarios')
+                .select('id, nombre')
+                .ilike('nombre', `%${texto}%`)
+                .limit(5);
+
+            if (error) throw error;
 
             suggestionsBox.innerHTML = "";
-            usuarios.forEach(usuario => {
+            usuarios.forEach(u => {
                 const div = document.createElement("div");
-                div.classList.add("suggestion-item");
-                div.textContent = usuario.nombre;
+                div.className = "suggestion-item";
+                div.textContent = u.nombre;
                 div.onclick = () => {
-                    inputUsuario.value = usuario.nombre;
-                    if (usuarioIdInput) usuarioIdInput.value = usuario.id;
+                    inputUsuario.value = u.nombre;
+                    if (usuarioIdInput) usuarioIdInput.value = u.id;
                     suggestionsBox.innerHTML = "";
                 };
                 suggestionsBox.appendChild(div);
             });
         } catch (error) {
-            console.error("Error buscando usuarios:", error);
+            console.error("Error:", error);
         }
     });
 }
