@@ -51,6 +51,7 @@ const PAGINAS_POR_ROL = {
     registro: ["ADMINISTRADOR", "PORTERO", "SECRETARIA"],
     reports: ["ADMINISTRADOR", "SECRETARIA", "DIRECTOR"],
     usuarios: ["ADMINISTRADOR"],
+    configuracion: ["ADMINISTRADOR"],
 };
 
 async function hasPermission(page) {

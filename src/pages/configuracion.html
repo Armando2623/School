@@ -1,0 +1,48 @@
+<div class="page-container page-configuracion animate-fade-in">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Configuración del Sistema</h1>
+            <p class="page-subtitle">Personalice la información de su institución educativa</p>
+        </div>
+    </div>
+
+    <div class="card form-card">
+        <form id="configForm" class="visit-form">
+            <div class="form-row">
+                <!-- Nombre del Colegio -->
+                <div class="form-group">
+                    <label for="configNombre"><i class="fas fa-school"></i> Nombre de la Institución <span class="required">*</span></label>
+                    <input type="text" id="configNombre" name="configNombre" required placeholder="Ej: Avícola Máncora / I.E. San Jorge">
+                </div>
+
+                <!-- Logo URL -->
+                <div class="form-group">
+                    <label for="configLogo"><i class="fas fa-image"></i> URL del Logo</label>
+                    <input type="url" id="configLogo" name="configLogo" placeholder="https://ejemplo.com/logo.png">
+                    <small style="color:var(--text-light); margin-top:5px; display:block;">Pega la URL de una imagen para usarla como logo (Opcional).</small>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <!-- Niveles -->
+                <div class="form-group full-width">
+                    <label for="configNiveles"><i class="fas fa-layer-group"></i> Niveles Educativos</label>
+                    <input type="text" id="configNiveles" name="configNiveles" placeholder="Ej: Inicial, Primaria, Secundaria">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <!-- Información Adicional -->
+                <div class="form-group full-width">
+                    <label for="configInfo"><i class="fas fa-info-circle"></i> Información Adicional</label>
+                    <textarea id="configInfo" name="configInfo" rows="3" placeholder="Información de contacto, lema, o cualquier dato extra de la institución..."></textarea>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="ConfiguracionManager.loadConfig()"><i class="fas fa-undo"></i> Restaurar</button>
+                <button type="submit" class="btn btn-primary" id="btnSaveConfig"><i class="fas fa-save"></i> Guardar Configuración</button>
+            </div>
+        </form>
+    </div>
+</div>

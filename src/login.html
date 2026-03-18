@@ -129,10 +129,10 @@
 
         <!-- Marca -->
         <div class="login-brand">
-            <div class="brand-icon">
+            <div class="brand-icon login-logo">
                 <i class="fas fa-school"></i>
             </div>
-            <h1>SchoolGuard</h1>
+            <h1 class="login-school-name">SchoolGuard</h1>
             <p>Sistema de Registro de Visitas</p>
         </div>
 
@@ -189,8 +189,17 @@
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/config-service.js"></script>
 
     <script>
+        // Cargar y aplicar configuración
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof ConfigService !== 'undefined') {
+                const config = await ConfigService.getConfig();
+                ConfigService.applyConfigToUI(config);
+            }
+        });
+
         // Supabase login logic
         async function handleLogin(event) {
             event.preventDefault();

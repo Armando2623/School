@@ -29,6 +29,11 @@ document.addEventListener('componentsLoaded', () => {
 
 
 function initializeApp() {
+    // Cargar config y aplicar a la UI
+    if (typeof ConfigService !== 'undefined') {
+        ConfigService.getConfig().then(c => ConfigService.applyConfigToUI(c));
+    }
+
     // Cargar datos desde localStorage o usar datos iniciales
     loadVisitors();
 
