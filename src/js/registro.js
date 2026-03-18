@@ -26,6 +26,10 @@ async function registerVisit(event) {
         if (editingVisitaId) {
             result = await supabaseClient.from('visitas').update(visitData).eq('id', editingVisitaId);
         } else {
+            let profile = null;
+            if (typeof getUserProfile === 'function') profile = await getUserProfile();
+            if (profile && profile.institucion_id) visitData.institucion_id = profile.institucion_id;
+
             result = await supabaseClient.from('visitas').insert([visitData]);
         }
 

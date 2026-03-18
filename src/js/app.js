@@ -70,12 +70,21 @@ function initializeApp() {
  * y oculta los ítems de nav que el rol actual no puede ver.
  * Se ejecuta después de que loader.js haya inyectado sidebar.html en el DOM.
  */
-function setupSidebarUI() {
+async function setupSidebarUI() {
     // Nombre y rol en el footer
     if (typeof initUserInfo === 'function') initUserInfo();
 
     // Filtrar ítems del menú según el rol
-    const rol = typeof getRol === 'function' ? getRol() : null;
+    let rol = null;
+    if (typeof getUserProfile === 'function') {
+        try {
+            const profile = await getUserProfile();
+            rol = profile ? profile.rol : null;
+        } catch (e) {
+            console.error(e);
+        }
+    }
+    
     if (!rol) return;
 
     document.querySelectorAll('.nav-item[data-roles]').forEach(li => {
@@ -186,7 +195,8 @@ function updateNavUI(page) {
         'dashboard': 'Dashboard',
         'visits': 'Historial de Visitas',
         'registro': 'Registrar Visita',
-        'reports': 'Reportes'
+        'reports': 'Reportes',
+        'asistencia': 'Registro Diario'
     };
     const titleEl = document.getElementById('pageTitle');
     if (titleEl) {
@@ -195,6 +205,12 @@ function updateNavUI(page) {
 
     // Datos por página
     if (page === 'dashboard' || page === 'visits') {
+        if (page === 'dashboard' && typeof ConfigService !== 'undefined') {
+            ConfigService.getConfig().then(c => {
+                const titleEl = document.getElementById('pageTitle');
+                if (titleEl) titleEl.textContent = c.nombre_colegio || 'Dashboard';
+            });
+        }
         if (typeof renderTable === 'function') {
             renderTable();
         }
@@ -469,6 +485,10 @@ async function quickRegister(event) {
         usuario_id: usuarioId,
         estado_registro: "REGISTRADO"
     };
+
+    let profile = null;
+    if (typeof getUserProfile === 'function') profile = await getUserProfile();
+    if (profile && profile.institucion_id) visitData.institucion_id = profile.institucion_id;
 
     try {
         const { error } = await supabaseClient.from('visitas').insert([visitData]);

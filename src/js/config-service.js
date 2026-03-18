@@ -15,20 +15,44 @@ const ConfigService = {
         }
 
         try {
-            const { data, error } = await supabaseClient
-                .from('configuracion')
-                .select('*')
-                .eq('id', 1)
-                .single();
+            // Obtener el ID de institución del usuario si está logeado
+            let institucionId = null;
+            if (typeof getUserProfile === 'function') {
+                try {
+                    const profile = await getUserProfile();
+                    if (profile && profile.institucion_id) {
+                        institucionId = profile.institucion_id;
+                    }
+                } catch(e) {}
+            }
+
+            let query = supabaseClient.from('instituciones').select('*');
+            
+            if (institucionId) {
+                query = query.eq('id', institucionId);
+            } else {
+                // Si no hay sesión (ej. Login), traemos la primera institución por defecto
+                query = query.limit(1);
+            }
+
+            const { data, error } = await query.single();
 
             if (error) {
-                // Si la tabla no existe o no hay datos, devolvemos un objeto por defecto
-                console.warn("Configuracion no encontrada, usando defaults:", error);
+                console.warn("Institucion no encontrada, usando defaults:", error);
                 return this.getDefaultConfig();
             }
 
-            this.currentConfig = data;
-            return data;
+            // Mapeamos los campos de 'instituciones' a lo que espera la UI (que usaba 'configuracion')
+            const mappedData = {
+                id: data.id,
+                nombre_colegio: data.nombre,
+                logo_url: data.logo_url,
+                niveles: data.niveles,
+                informacion_adicional: data.informacion_adicional
+            };
+
+            this.currentConfig = mappedData;
+            return mappedData;
         } catch (error) {
             console.error("Error al cargar configuración", error);
             return this.getDefaultConfig();
@@ -40,19 +64,49 @@ const ConfigService = {
      */
     async updateConfig(newConfigData) {
         try {
+            let institucionId = null;
+            if (typeof getUserProfile === 'function') {
+                const profile = await getUserProfile();
+                if (profile && profile.institucion_id) {
+                    institucionId = profile.institucion_id;
+                }
+            }
+
+            if (!institucionId && this.currentConfig && this.currentConfig.id) {
+                institucionId = this.currentConfig.id;
+            }
+            
+            if (!institucionId) throw new Error("No se pudo determinar el ID de la institución.");
+
+            const dbData = {
+                nombre: newConfigData.nombre_colegio,
+                logo_url: newConfigData.logo_url,
+                niveles: newConfigData.niveles,
+                informacion_adicional: newConfigData.informacion_adicional
+            };
+
             const { data, error } = await supabaseClient
-                .from('configuracion')
-                .upsert({ id: 1, ...newConfigData })
+                .from('instituciones')
+                .update(dbData)
+                .eq('id', institucionId)
                 .select()
                 .single();
 
             if (error) throw error;
             
-            this.currentConfig = data;
+            const mappedData = {
+                id: data.id,
+                nombre_colegio: data.nombre,
+                logo_url: data.logo_url,
+                niveles: data.niveles,
+                informacion_adicional: data.informacion_adicional
+            };
+
+            this.currentConfig = mappedData;
             
             // Refrescar UI inmediatamente después de guardar
             this.applyConfigToUI(this.currentConfig);
-            return { success: true, data };
+            return { success: true, data: mappedData };
         } catch (error) {
             console.error("Error al actualizar configuración:", error);
             return { success: false, error };
@@ -65,8 +119,8 @@ const ConfigService = {
     applyConfigToUI(config) {
         if (!config) return;
 
-        // Actualizar nombres
-        document.querySelectorAll('.app-school-name, .logo-text, .login-school-name').forEach(el => {
+        // Actualizar nombres (solo en login)
+        document.querySelectorAll('.login-school-name').forEach(el => {
             el.textContent = config.nombre_colegio;
         });
 
@@ -110,6 +164,14 @@ const ConfigService = {
                 img.src = config.logo_url;
             });
         }
+
+        // Si estamos en el dashboard u otra página que use #pageTitle, 
+        // y el texto actual es "Dashboard" o el hash está vacío / es dashboard
+        const pageTitleEl = document.getElementById('pageTitle');
+        const hash = location.hash.replace("#", "");
+        if (pageTitleEl && (!hash || hash === 'dashboard')) {
+            pageTitleEl.textContent = config.nombre_colegio;
+        }
     },
 
     /**
@@ -117,11 +179,11 @@ const ConfigService = {
      */
     getDefaultConfig() {
         return {
-            id: 1,
-            nombre_colegio: 'SchoolGuard',
+            id: null,
+            nombre_colegio: 'ViraSchool',
             logo_url: '', // Se usa icono FontAwesome por defecto
             niveles: 'Inicial, Primaria, Secundaria',
-            informacion_adicional: 'Sistema de registro de visitas escolares'
+            informacion_adicional: 'Sistema Multi-Tenant'
         };
     }
 };

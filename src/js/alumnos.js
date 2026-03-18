@@ -120,6 +120,10 @@ async function submitAlumnoForm(event) {
         if (editingAlumnoId) {
             result = await supabaseClient.from('alumnos').update(data).eq('id', editingAlumnoId);
         } else {
+            let profile = null;
+            if (typeof getUserProfile === 'function') profile = await getUserProfile();
+            if (profile && profile.institucion_id) data.institucion_id = profile.institucion_id;
+
             result = await supabaseClient.from('alumnos').insert([data]);
         }
 

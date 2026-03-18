@@ -1,15 +1,22 @@
-function loadPage(page) {
+async function loadPage(page) {
     // Verificar permisos (auth.js debe estar cargado antes)
-    if (typeof hasPermission === 'function' && !hasPermission(page)) {
-        const app = document.getElementById("app");
-        app.innerHTML = `
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                        min-height:300px;text-align:center;color:var(--text-secondary);">
-                <i class="fas fa-lock" style="font-size:48px;margin-bottom:16px;color:var(--error-color);"></i>
-                <h2 style="color:var(--text-primary);margin-bottom:8px;">Acceso restringido</h2>
-                <p>Tu rol no tiene permisos para acceder a esta sección.</p>
-            </div>`;
-        return;
+    if (typeof hasPermission === 'function') {
+        try {
+            const allowed = await hasPermission(page);
+            if (!allowed) {
+                const app = document.getElementById("app");
+                app.innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                                min-height:300px;text-align:center;color:var(--text-secondary);">
+                        <i class="fas fa-lock" style="font-size:48px;margin-bottom:16px;color:var(--error-color);"></i>
+                        <h2 style="color:var(--text-primary);margin-bottom:8px;">Acceso restringido</h2>
+                        <p>Tu rol no tiene permisos para acceder a esta sección.</p>
+                    </div>`;
+                return;
+            }
+        } catch (e) {
+            console.error("Error al verificar permisos:", e);
+        }
     }
 
     fetch(`pages/${page}.html`)
@@ -19,7 +26,7 @@ function loadPage(page) {
             app.innerHTML = html;
 
             // Páginas que re-ejecutan su JS en cada visita (necesitan re-init)
-            const ALWAYS_RELOAD = ["mensajes"];
+            const ALWAYS_RELOAD = ["mensajes", "asistencia"];
 
             const scriptId = `script-${page}`;
             const existing = document.getElementById(scriptId);

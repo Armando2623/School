@@ -123,7 +123,6 @@ async function submitUsuarioForm(event) {
             if (error) throw error;
             showToast("Usuario actualizado", "success");
         } else {
-            // Nota: El registro de nuevos usuarios suele requerir auth.signUp
             const { data, error } = await supabaseClient.auth.signUp({
                 email: usuario,
                 password: pass,
@@ -131,8 +130,12 @@ async function submitUsuarioForm(event) {
             });
             if (error) throw error;
             
+            let profile = null;
+            if (typeof getUserProfile === 'function') profile = await getUserProfile();
+            let instId = profile ? profile.institucion_id : null;
+
             // Insertar perfil manualmente si no hay trigger
-            await supabaseClient.from('usuarios').insert([{ id: data.user.id, nombre, usuario, rol }]);
+            await supabaseClient.from('usuarios').insert([{ id: data.user.id, nombre, usuario, rol, institucion_id: instId }]);
             showToast("Usuario invitado", "success");
         }
         hideUsuarioForm();

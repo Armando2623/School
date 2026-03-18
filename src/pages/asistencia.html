@@ -1,0 +1,76 @@
+<!-- Módulo: Registro Diario (Asistencia) -->
+<section class="content-section fade-in" id="asistenciaSection">
+
+    <div class="module-header">
+        <div>
+            <h2><i class="fas fa-user-clock"></i> Registro Diario</h2>
+            <p>Control de asistencia del personal de la institución</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <input type="date" id="asistenciaFecha" onchange="cargarAsistencias()">
+            </div>
+            <button class="action-btn primary" onclick="cargarAsistencias()">
+                <i class="fas fa-sync-alt"></i> <span>Refrescar</span>
+            </button>
+        </div>
+    </div>
+
+
+
+    <div class="stats-container" style="margin-bottom: 20px;">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-users" style="color:#007bff"></i></div>
+            <div class="stat-info">
+                <h3>Total Empleados</h3>
+                <p id="totalEmpleados">0</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-sign-in-alt" style="color:#28a745"></i></div>
+            <div class="stat-info">
+                <h3>Presentes</h3>
+                <p id="totalPresentes">0</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-clock" style="color:#ffc107"></i></div>
+            <div class="stat-info">
+                <h3>Aún sin Entrada</h3>
+                <p id="totalFaltantes">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de búsqueda e información -->
+    <div class="actions-bar" style="margin-bottom: 20px;">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="asistenciaSearch" placeholder="Buscar empleado por nombre o rol..."
+                onkeyup="filtrarAsistencias()">
+        </div>
+    </div>
+
+    <!-- Tabla principal -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Empleado / Usuario</th>
+                    <th>Rol</th>
+                    <th>Estado de Hoy</th>
+                    <th>Hora Entrada</th>
+                    <th>Hora Salida</th>
+                    <th style="min-width:200px;">Acciones Rápidas</th>
+                </tr>
+            </thead>
+            <tbody id="asistenciaTableBody">
+                <!-- Data injection via asistencia.js -->
+                <tr>
+                    <td colspan="6" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando personal...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</section>

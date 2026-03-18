@@ -101,6 +101,10 @@ async function submitVisitanteForm(event) {
         if (editingVisitanteId) {
             result = await supabaseClient.from('visitantes').update(data).eq('id', editingVisitanteId);
         } else {
+            let profile = null;
+            if (typeof getUserProfile === 'function') profile = await getUserProfile();
+            if (profile && profile.institucion_id) data.institucion_id = profile.institucion_id;
+
             result = await supabaseClient.from('visitantes').insert([data]).select();
         }
 
@@ -174,18 +178,25 @@ async function handleVisitantesFile(file) {
     const workbook = XLSX.read(data);
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
     
+    let profile = null;
+    if (typeof getUserProfile === 'function') profile = await getUserProfile();
+    let institucionId = profile ? profile.institucion_id : null;
+    
     let ok = 0, err = 0;
     for (const r of rows) {
         const dni = String(r.dni_visitante || "");
         const nom = String(r.nombre_visitante || "");
         if (!dni || !nom) { err++; continue; }
 
-        const { error } = await supabaseClient.from('visitantes').insert([{
+        const payload = {
             dni_visitante: dni,
             nombre_visitante: nom,
             telefono: r.telefono || null,
             email: r.email || null
-        }]);
+        };
+        if (institucionId) payload.institucion_id = institucionId;
+
+        const { error } = await supabaseClient.from('visitantes').insert([payload]);
         if (error) err++; else ok++;
     }
     showToast(`Importación: ${ok} exitosos, ${err} fallidos`, "info");

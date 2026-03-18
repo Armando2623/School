@@ -4,7 +4,7 @@
   "description": "SchoolGuard - Sistema de Registro de Visitas Escolares",
   "main": "src/js/app.js",
   "scripts": {
-    "dev": "npx serve src",
+    "dev": "node generate-env.js && npx serve src",
     "build": "node -e \"const fs = require('fs'); const path = require('path'); if (fs.existsSync('public')) fs.rmSync('public', { recursive: true, force: true }); fs.cpSync('src', 'public', { recursive: true }); const configPath = path.join('public', 'js', 'supabase-config.js'); if (fs.existsSync(configPath)) { let content = fs.readFileSync(configPath, 'utf8'); content = content.replace('__SUPABASE_URL__', process.env.SUPABASE_URL || ''); content = content.replace('__SUPABASE_ANON_KEY__', process.env.SUPABASE_ANON_KEY || ''); fs.writeFileSync(configPath, content); }\"",
     "test": "node test.js"
   },
