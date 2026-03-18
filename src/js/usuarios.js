@@ -14,9 +14,19 @@ async function cargarUsuarios() {
     tbody.innerHTML = `<tr><td colspan="5" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>`;
 
     try {
+        // 1. Obtenemos el perfil del admin logueado
+        // (Asumo que getUserProfile() devuelve el campo 'institucion_id')
+        const adminProfile = await getUserProfile();
+
+        if (!adminProfile || !adminProfile.institucion_id) {
+            console.error("No se encontró la institución del administrador");
+            return;
+        }
+
         const { data, error } = await supabaseClient
             .from('usuarios')
             .select('*')
+            .eq('institucion_id', adminProfile.institucion_id) // <-- EL FILTRO MÁGICO
             .order('nombre', { ascending: true });
 
         if (error) throw error;
@@ -119,7 +129,7 @@ async function submitUsuarioForm(event) {
                 .from('usuarios')
                 .update({ nombre, rol })
                 .eq('id', editingUserUuid);
-            
+
             if (error) throw error;
             showToast("Usuario actualizado", "success");
         } else {
@@ -129,7 +139,7 @@ async function submitUsuarioForm(event) {
                 options: { data: { nombre, rol } }
             });
             if (error) throw error;
-            
+
             let profile = null;
             if (typeof getUserProfile === 'function') profile = await getUserProfile();
             let instId = profile ? profile.institucion_id : null;
