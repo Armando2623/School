@@ -68,10 +68,10 @@ const PAGINAS_POR_ROL = {
     alumnos:       ["ADMINISTRADOR", "SECRETARIA"],
     personal:      ["ADMINISTRADOR", "SECRETARIA", "PORTERO"],
     registro:      ["ADMINISTRADOR", "PORTERO", "SECRETARIA"],
-    reports:       ["ADMINISTRADOR", "SECRETARIA", "DIRECTOR", "PORTERO"],
+    reports:       ["ADMINISTRADOR", "SECRETARIA", "DIRECTOR", "PORTERO", "PROFESOR"],
     usuarios:      ["ADMINISTRADOR"],
     configuracion: ["ADMINISTRADOR"],
-    asistencia:    ["ADMINISTRADOR", "SECRETARIA", "PORTERO"]
+    asistencia:    ["ADMINISTRADOR", "SECRETARIA", "PORTERO", "PROFESOR"]
 };
 
 async function hasPermission(page) {

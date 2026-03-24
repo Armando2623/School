@@ -21,17 +21,36 @@ CREATE INDEX IF NOT EXISTS idx_personal_institucion ON public.personal(instituci
 -- ─── Row Level Security ───────────────────────────────────────
 ALTER TABLE public.personal ENABLE ROW LEVEL SECURITY;
 
--- Solo los usuarios de la misma institución pueden ver el personal
+-- 1. Lectura: cualquier usuario autenticado de la misma institución puede leer
+DROP POLICY IF EXISTS "Lectura personal de mi institucion" ON public.personal;
 CREATE POLICY "Lectura personal de mi institucion"
-ON public.personal
-FOR SELECT USING (
+ON public.personal FOR SELECT
+USING (institucion_id = public.get_user_institucion());
+
+-- 2. Inserción: verifica la fila NUEVA (WITH CHECK) — evita el bug de FOR ALL
+DROP POLICY IF EXISTS "Insertar personal de mi institucion" ON public.personal;
+DROP POLICY IF EXISTS "Gestion personal de mi institucion" ON public.personal;
+CREATE POLICY "Insertar personal de mi institucion"
+ON public.personal FOR INSERT
+WITH CHECK (
     institucion_id = public.get_user_institucion()
+    AND (SELECT rol FROM public.usuarios WHERE id = auth.uid())
+        IN ('ADMINISTRADOR', 'SECRETARIA')
 );
 
--- Solo ADMINISTRADOR y SECRETARIA pueden crear/editar/eliminar
-CREATE POLICY "Gestion personal de mi institucion"
-ON public.personal
-FOR ALL USING (
+-- 3. Edición/Eliminación: solo ADMIN y SECRETARIA de la misma institución
+CREATE POLICY "Modificar personal de mi institucion"
+ON public.personal FOR UPDATE
+USING (institucion_id = public.get_user_institucion())
+WITH CHECK (
+    institucion_id = public.get_user_institucion()
+    AND (SELECT rol FROM public.usuarios WHERE id = auth.uid())
+        IN ('ADMINISTRADOR', 'SECRETARIA')
+);
+
+CREATE POLICY "Eliminar personal de mi institucion"
+ON public.personal FOR DELETE
+USING (
     institucion_id = public.get_user_institucion()
     AND (SELECT rol FROM public.usuarios WHERE id = auth.uid())
         IN ('ADMINISTRADOR', 'SECRETARIA')

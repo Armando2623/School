@@ -145,12 +145,13 @@
                         <th><i class="fas fa-id-badge"></i> DNI</th>
                         <th><i class="fas fa-phone"></i> Teléfono</th>
                         <th><i class="fas fa-envelope"></i> Email</th>
+                        <th><i class="fas fa-shield-alt"></i> Acceso</th>
                         <th><i class="fas fa-cogs"></i> Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="personalTableBody">
                     <tr>
-                        <td colspan="6" class="loading-row">
+                        <td colspan="7" class="loading-row">
                             <i class="fas fa-spinner fa-spin"></i> Cargando personal...
                         </td>
                     </tr>
@@ -163,4 +164,90 @@
         </div>
     </div>
 
+    <!-- ── Modal: Activar como usuario del sistema ── -->
+    <div id="activarUsuarioOverlay" style="
+            display:none; position:fixed; inset:0; z-index:500;
+            background:rgba(0,0,0,.45); backdrop-filter:blur(3px);
+            align-items:center; justify-content:center;">
+        <div style="
+                background:var(--surface-color); border-radius:16px;
+                padding:28px 32px; width:100%; max-width:420px;
+                box-shadow:0 20px 60px rgba(0,0,0,.25);
+                border:1px solid var(--border-color);">
+
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+                <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+                    <span style="background:linear-gradient(135deg,#2563eb,#6366f1); width:32px; height:32px; border-radius:8px;
+                                 display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px;">
+                        <i class="fas fa-key"></i>
+                    </span>
+                    Activar acceso al sistema
+                </h3>
+                <button type="button" class="btn-icon" onclick="cerrarModalActivar()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <p id="activarNombreInfo" style="font-size:13px; color:var(--text-secondary); margin-bottom:18px;
+               background:var(--background-color); border-radius:8px; padding:10px 14px;">
+            </p>
+
+            <form id="activarUsuarioForm" onsubmit="submitActivarUsuario(event)">
+                <input type="hidden" id="activarPersonalId">
+
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label for="activarEmail" style="font-size:13px; font-weight:600; margin-bottom:6px; display:block;">
+                        <i class="fas fa-envelope"></i> Email (usuario para iniciar sesión) *
+                    </label>
+                    <input type="email" id="activarEmail" required placeholder="ej: carlos@colegio.pe"
+                           style="width:100%; padding:10px 14px; border:1px solid var(--border-color);
+                                  border-radius:8px; font-size:14px; transition:border-color .2s;"
+                           onfocus="this.style.borderColor='var(--primary-color)'"
+                           onblur="this.style.borderColor='var(--border-color)'">
+                </div>
+
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label for="activarPassword" style="font-size:13px; font-weight:600; margin-bottom:6px; display:block;">
+                        <i class="fas fa-lock"></i> Contraseña temporal *
+                    </label>
+                    <input type="password" id="activarPassword" required placeholder="Mínimo 6 caracteres"
+                           minlength="6"
+                           style="width:100%; padding:10px 14px; border:1px solid var(--border-color);
+                                  border-radius:8px; font-size:14px; transition:border-color .2s;"
+                           onfocus="this.style.borderColor='var(--primary-color)'"
+                           onblur="this.style.borderColor='var(--border-color)'">
+                </div>
+
+                <div class="form-group" style="margin-bottom:22px;">
+                    <label for="activarRol" style="font-size:13px; font-weight:600; margin-bottom:6px; display:block;">
+                        <i class="fas fa-shield-alt"></i> Rol en el sistema *
+                    </label>
+                    <select id="activarRol" required
+                            style="width:100%; padding:10px 14px; border:1px solid var(--border-color);
+                                   border-radius:8px; font-size:14px; background:var(--surface-color);
+                                   transition:border-color .2s;"
+                            onfocus="this.style.borderColor='var(--primary-color)'"
+                            onblur="this.style.borderColor='var(--border-color)'">
+                        <option value="">— Seleccionar rol —</option>
+                        <option value="SECRETARIA">Secretaria</option>
+                        <option value="DIRECTOR">Director</option>
+                        <option value="PORTERO">Portero</option>
+                        <option value="PROFESOR">Profesor</option>
+                        <option value="ADMINISTRADOR">Administrador</option>
+                    </select>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button type="button" class="btn-cancel" style="flex:1;" onclick="cerrarModalActivar()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-submit" id="btnSubmitActivar" style="flex:1.5;">
+                        <i class="fas fa-key"></i> Activar cuenta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </section>
+
