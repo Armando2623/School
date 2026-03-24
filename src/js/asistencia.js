@@ -1,6 +1,9 @@
 // ============================================================
 // asistencia.js — Lógica para Módulo "Registro Diario"
+// Envuelto en IIFE para evitar errores de re-declaración
+// cuando el router recarga el script al navegar.
 // ============================================================
+(function () {
 
 let asistenciaData = [];
 let institucionCtx = null;
@@ -216,3 +219,5 @@ async function eliminarRegistro(registroId) {
 
 // Iniciar
 initAsistencia();
+
+})(); // fin IIFE
