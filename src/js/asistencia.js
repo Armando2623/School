@@ -220,4 +220,10 @@
     // Iniciar
     initAsistencia();
 
+    // ── Exponer al scope global para los onclick del HTML ──
+    window.marcarAsistencia    = marcarAsistencia;
+    window.eliminarRegistro    = eliminarRegistro;
+    window.filtrarAsistencias  = filtrarAsistencias;
+    window.cargarAsistencias   = cargarAsistencias;
+
 })(); // fin IIFE
