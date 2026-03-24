@@ -29,12 +29,7 @@ document.addEventListener('componentsLoaded', () => {
 
 
 function initializeApp() {
-    // Cargar config y aplicar a la UI
-    if (typeof ConfigService !== 'undefined') {
-        ConfigService.getConfig().then(c => ConfigService.applyConfigToUI(c));
-    }
-
-    // Cargar datos desde localStorage o usar datos iniciales
+    // Cargar datos de visitas desde Supabase
     loadVisitors();
 
     // Actualizar fecha actual
@@ -69,22 +64,35 @@ function initializeApp() {
  * Llena el nombre/rol del usuario logueado en el sidebar footer
  * y oculta los ítems de nav que el rol actual no puede ver.
  * Se ejecuta después de que loader.js haya inyectado sidebar.html en el DOM.
+ *
+ * Obtiene el perfil UNA sola vez y lo reutiliza para: nombre/rol en sidebar,
+ * filtrado de menú, y carga de config/logo del colegio.
  */
 async function setupSidebarUI() {
-    // Nombre y rol en el footer
-    if (typeof initUserInfo === 'function') initUserInfo();
-
-    // Filtrar ítems del menú según el rol
-    let rol = null;
+    // 1. Obtener el perfil UNA sola vez (con caché en auth.js)
+    let profile = null;
     if (typeof getUserProfile === 'function') {
         try {
-            const profile = await getUserProfile();
-            rol = profile ? profile.rol : null;
+            profile = await getUserProfile();
         } catch (e) {
-            console.error(e);
+            console.error('setupSidebarUI: error al obtener perfil', e);
         }
     }
-    
+
+    // 2. Rellenar nombre y rol en el footer del sidebar (sin re-consultar)
+    if (typeof initUserInfo === 'function') {
+        await initUserInfo(profile);
+    }
+
+    // 3. Cargar config/logo pasando el institucionId ya conocido para no re-consultar
+    if (typeof ConfigService !== 'undefined') {
+        const instId = profile ? profile.institucion_id : null;
+        const config = await ConfigService.getConfig(instId);
+        ConfigService.applyConfigToUI(config);
+    }
+
+    // 4. Filtrar ítems del menú según el rol (datos ya en memoria)
+    const rol = profile ? profile.rol : null;
     if (!rol) return;
 
     document.querySelectorAll('.nav-item[data-roles]').forEach(li => {
@@ -94,6 +102,7 @@ async function setupSidebarUI() {
         }
     });
 }
+
 
 // Cargar visitantes desde la API (con fallback a datos iniciales si el backend no responde)
 async function loadVisitors() {
@@ -191,17 +200,29 @@ function updateNavUI(page) {
     });
 
     // Actualizar título en el header
-    const titles = {
-        'dashboard': 'Dashboard',
-        'visits': 'Historial de Visitas',
-        'registro': 'Registrar Visita',
-        'reports': 'Reportes',
-        'asistencia': 'Registro Diario'
+    const pageTitles = {
+        'dashboard':    'Dashboard',
+        'visits':       'Historial de Visitas',
+        'registro':     'Registrar Visita',
+        'visitantes':   'Visitantes',
+        'alumnos':      'Alumnos',
+        'personal':     'Personal',
+        'asistencia':   'Registro Diario',
+        'reports':      'Reportes',
+        'mensajes':     'Mensajes',
+        'usuarios':     'Usuarios',
+        'configuracion': 'Configuración',
     };
+    const label = pageTitles[page] || page;
     const titleEl = document.getElementById('pageTitle');
-    if (titleEl) {
-        titleEl.textContent = titles[page] || page;
-    }
+    if (titleEl) titleEl.textContent = label;
+
+    // Actualizar título en el topbar mobile
+    const mobileTitleEl = document.getElementById('mobilePageTitle');
+    if (mobileTitleEl) mobileTitleEl.textContent = label;
+
+    // Cerrar sidebar drawer en mobile al navegar
+    if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
 
     // Datos por página
     if (page === 'dashboard' || page === 'visits') {
@@ -224,19 +245,17 @@ function updateNavUI(page) {
 function navigateTo(page) {
     location.hash = page;
 }
+
 // Toggle del sidebar — colapsar en desktop
 function setupSidebarToggle() {
     // Restaurar estado guardado al cargar
     if (localStorage.getItem('sidebarCollapsed') === 'true') {
-        // Necesitamos un pequeño timeout porque el sidebar entra via fetch async
         setTimeout(() => {
             document.querySelector('.sidebar')?.classList.add('collapsed');
             document.querySelector('.main-content')?.classList.add('sidebar-collapsed');
-        }, 50); // Tiempo razonable para que el DOM se asigne
+        }, 50);
     }
 
-    // Delegación de eventos: Escuchamos clics en el body para detectar el sidebarToggle
-    // sin importar cuándo fue inyectado el HTML del sidebar
     document.body.addEventListener('click', (e) => {
         const toggleBtn = e.target.closest('#sidebarToggle');
         if (toggleBtn) {
@@ -252,7 +271,23 @@ function setupSidebarToggle() {
     });
 }
 
+// Toggle del sidebar en mobile — drawer deslizante
+function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (!sidebar) return;
 
+    const isOpen = sidebar.classList.toggle('mobile-open');
+    if (overlay) overlay.classList.toggle('active', isOpen);
+}
+
+// Cerrar sidebar mobile al navegar
+function closeMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (sidebar) sidebar.classList.remove('mobile-open');
+    if (overlay) overlay.classList.remove('active');
+}
 
 
 // ========================================

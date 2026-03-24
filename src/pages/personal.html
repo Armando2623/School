@@ -1,0 +1,166 @@
+<!-- Módulo: Personal del Colegio -->
+<section class="content-section" id="personalSection">
+
+    <div class="module-header">
+        <div>
+            <h2><i class="fas fa-id-badge"></i> Personal del Colegio</h2>
+            <p>Trabajadores y personal administrativo de la institución</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="action-btn secondary" onclick="toggleImportPersonalPanel()">
+                <i class="fas fa-file-excel"></i> <span>Importar Excel</span>
+            </button>
+            <button class="action-btn primary" onclick="showAddPersonalForm()">
+                <i class="fas fa-plus"></i> <span>Nuevo Personal</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Panel de importación Excel (oculto por defecto) -->
+    <div id="importPersonalPanel" class="form-card" style="display:none;">
+        <div class="form-card-header">
+            <h3><i class="fas fa-file-excel" style="color:#21a366;"></i> Importar Personal desde Excel</h3>
+            <button type="button" class="btn-icon" onclick="toggleImportPersonalPanel()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="import-instructions">
+            <p><i class="fas fa-info-circle"></i> El archivo Excel debe tener estas columnas (fila 1 = encabezados):</p>
+            <table class="format-table">
+                <thead>
+                    <tr>
+                        <th>nombre</th>
+                        <th>cargo</th>
+                        <th>dni</th>
+                        <th>telefono</th>
+                        <th>email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Carlos Ramos</td>
+                        <td>Docente</td>
+                        <td>45678901</td>
+                        <td>987123456</td>
+                        <td>carlos@colegio.pe</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="font-size:12px; color:var(--text-secondary); margin-top:6px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                Solo <code>nombre</code> y <code>cargo</code> son obligatorios.
+                <code>dni</code>, <code>telefono</code> y <code>email</code> son opcionales.
+            </p>
+        </div>
+
+        <div class="import-drop-zone" id="dropZonePersonal"
+            ondragover="event.preventDefault(); this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')" ondrop="handlePersonalDrop(event)">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Arrastra tu archivo aquí o</p>
+            <label for="excelPersonalInput" class="btn-submit"
+                style="cursor:pointer; display:inline-flex; margin-top:6px;">
+                <i class="fas fa-folder-open"></i> Seleccionar archivo
+            </label>
+            <input type="file" id="excelPersonalInput" accept=".xlsx,.xls,.csv" style="display:none"
+                onchange="handlePersonalFile(this.files[0])">
+        </div>
+
+        <div id="importPersonalLog" style="display:none; margin-top:16px;">
+            <div class="import-log-header">
+                <strong><i class="fas fa-terminal"></i> Resultado de importación</strong>
+                <span id="importPersonalSummary"></span>
+            </div>
+            <div id="importPersonalLogBody" class="import-log-body"></div>
+        </div>
+    </div>
+
+    <!-- Formulario nuevo / edición (oculto por defecto) -->
+    <div id="personalFormCard" class="form-card" style="display:none;">
+        <div class="form-card-header">
+            <h3 id="personalFormTitle"><i class="fas fa-user-tie"></i> Nuevo Personal</h3>
+            <button type="button" class="btn-icon" onclick="hidePersonalForm()" title="Cerrar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="personalForm" onsubmit="submitPersonalForm(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pNombre"><i class="fas fa-id-card"></i> Nombre completo *</label>
+                    <input type="text" id="pNombre" required placeholder="Ej: Carlos Ramos García" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label for="pCargo"><i class="fas fa-briefcase"></i> Cargo *</label>
+                    <input type="text" id="pCargo" required placeholder="Ej: Docente, Auxiliar, Director" maxlength="80">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pDni"><i class="fas fa-id-badge"></i> DNI</label>
+                    <input type="text" id="pDni" placeholder="Ej: 45678901" maxlength="15">
+                </div>
+                <div class="form-group">
+                    <label for="pTelefono"><i class="fas fa-phone"></i> Teléfono</label>
+                    <input type="tel" id="pTelefono" placeholder="Ej: 987654321" maxlength="20">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pEmail"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="pEmail" placeholder="Ej: carlos@colegio.pe">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="hidePersonalForm()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="submit" class="btn-submit" id="btnSubmitPersonal">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de personal -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 style="font-size:15px; color:var(--text-secondary);">
+                <i class="fas fa-list"></i> Personal registrado
+            </h3>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="personalSearch" placeholder="Buscar por nombre, cargo o DNI..."
+                    oninput="filtrarPersonal()">
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table" id="personalTable">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-user"></i> Nombre</th>
+                        <th><i class="fas fa-briefcase"></i> Cargo</th>
+                        <th><i class="fas fa-id-badge"></i> DNI</th>
+                        <th><i class="fas fa-phone"></i> Teléfono</th>
+                        <th><i class="fas fa-envelope"></i> Email</th>
+                        <th><i class="fas fa-cogs"></i> Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="personalTableBody">
+                    <tr>
+                        <td colspan="6" class="loading-row">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando personal...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="records-count" id="personalCount">0 trabajadores</span>
+        </div>
+    </div>
+
+</section>

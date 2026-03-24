@@ -8,16 +8,17 @@ const ConfigService = {
 
     /**
      * Obtiene la configuración desde Supabase.
+     * @param {string|null} preloadedInstitucionId - ID ya conocido del perfil para evitar re-consultar.
      */
-    async getConfig() {
+    async getConfig(preloadedInstitucionId = null) {
         if (this.currentConfig) {
             return this.currentConfig;
         }
 
         try {
-            // Obtener el ID de institución del usuario si está logeado
-            let institucionId = null;
-            if (typeof getUserProfile === 'function') {
+            // Usar el ID pre-cargado si viene del caller, o buscarlo desde el perfil
+            let institucionId = preloadedInstitucionId || null;
+            if (!institucionId && typeof getUserProfile === 'function') {
                 try {
                     const profile = await getUserProfile();
                     if (profile && profile.institucion_id) {

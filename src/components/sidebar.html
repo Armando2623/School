@@ -3,8 +3,13 @@
 
     <div class="sidebar-header">
         <div class="logo">
-            <i class="fas fa-school app-school-logo"></i>
-            <span class="logo-text app-school-name">ViraSchool</span>
+            <div class="logo-icon">
+                <i class="fas fa-school app-school-logo"></i>
+            </div>
+            <div class="logo-text-wrap">
+                <span class="logo-text app-school-name">ViraSchool</span>
+                <span class="logo-sub">Sistema de Visitas</span>
+            </div>
         </div>
         <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Colapsar menú">
             <i class="fas fa-chevron-left"></i>
@@ -12,6 +17,8 @@
     </div>
 
     <nav class="sidebar-nav">
+
+        <div class="nav-section-label">Principal</div>
         <ul class="nav-list">
             <li class="nav-item active" data-page="dashboard">
                 <a href="#dashboard" title="Dashboard">
@@ -25,14 +32,16 @@
                     <span class="nav-label">Visitas</span>
                 </a>
             </li>
-            <!-- Solo roles con permiso de registro -->
+        </ul>
+
+        <div class="nav-section-label">Gestión</div>
+        <ul class="nav-list">
             <li class="nav-item" data-page="registro" data-roles="ADMINISTRADOR,PORTERO,SECRETARIA">
                 <a href="#registro" title="Registrar Visita">
                     <i class="fas fa-user-plus"></i>
                     <span class="nav-label">Registrar Visita</span>
                 </a>
             </li>
-            <!-- Solo ADMINISTRADOR y SECRETARIA -->
             <li class="nav-item" data-page="visitantes" data-roles="ADMINISTRADOR,SECRETARIA">
                 <a href="#visitantes" title="Visitantes">
                     <i class="fas fa-address-book"></i>
@@ -45,34 +54,28 @@
                     <span class="nav-label">Alumnos</span>
                 </a>
             </li>
+            <li class="nav-item" data-page="personal" data-roles="ADMINISTRADOR,SECRETARIA">
+                <a href="#personal" title="Personal del Colegio">
+                    <i class="fas fa-id-badge"></i>
+                    <span class="nav-label">Personal</span>
+                </a>
+            </li>
             <li class="nav-item" data-page="asistencia" data-roles="ADMINISTRADOR,SECRETARIA">
                 <a href="#asistencia" title="Registro Diario">
                     <i class="fas fa-user-clock"></i>
                     <span class="nav-label">Registro Diario</span>
                 </a>
             </li>
-            <!-- Reportes: ADMIN, SECRETARIA, DIRECTOR -->
+        </ul>
+
+        <div class="nav-section-label">Análisis</div>
+        <ul class="nav-list">
             <li class="nav-item" data-page="reports" data-roles="ADMINISTRADOR,SECRETARIA,DIRECTOR">
                 <a href="#reports" title="Reportes">
                     <i class="fas fa-file-alt"></i>
                     <span class="nav-label">Reportes</span>
                 </a>
             </li>
-            <!-- Usuarios: solo ADMINISTRADOR -->
-            <li class="nav-item" data-page="usuarios" data-roles="ADMINISTRADOR">
-                <a href="#usuarios" title="Usuarios del Sistema">
-                    <i class="fas fa-users-cog"></i>
-                    <span class="nav-label">Usuarios</span>
-                </a>
-            </li>
-            <!-- Configuración: solo ADMINISTRADOR -->
-            <li class="nav-item" data-page="configuracion" data-roles="ADMINISTRADOR">
-                <a href="#configuracion" title="Configuración del Sistema">
-                    <i class="fas fa-cogs"></i>
-                    <span class="nav-label">Configuración</span>
-                </a>
-            </li>
-            <!-- Mensajería: todos los roles -->
             <li class="nav-item" data-page="mensajes">
                 <a href="#mensajes" title="Mensajería Interna" style="position:relative;">
                     <i class="fas fa-comments"></i>
@@ -81,6 +84,23 @@
                 </a>
             </li>
         </ul>
+
+        <div class="nav-section-label">Sistema</div>
+        <ul class="nav-list">
+            <li class="nav-item" data-page="usuarios" data-roles="ADMINISTRADOR">
+                <a href="#usuarios" title="Usuarios del Sistema">
+                    <i class="fas fa-users-cog"></i>
+                    <span class="nav-label">Usuarios</span>
+                </a>
+            </li>
+            <li class="nav-item" data-page="configuracion" data-roles="ADMINISTRADOR">
+                <a href="#configuracion" title="Configuración del Sistema">
+                    <i class="fas fa-cogs"></i>
+                    <span class="nav-label">Configuración</span>
+                </a>
+            </li>
+        </ul>
+
     </nav>
 
     <div class="sidebar-footer">
@@ -98,5 +118,6 @@
             <span class="nav-label">Salir</span>
         </button>
     </div>
+
 
 </aside>

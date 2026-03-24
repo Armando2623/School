@@ -18,9 +18,19 @@
 
     <div class="app-container">
 
+        <!-- Overlay para cerrar sidebar en mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
+
         <div id="sidebar"></div>
 
         <main class="main-content">
+            <!-- Topbar mobile (hamburguesa) -->
+            <div class="mobile-topbar">
+                <button class="btn-hamburger" onclick="toggleMobileSidebar()" aria-label="Abrir menú">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <span class="mobile-topbar-title" id="mobilePageTitle">Dashboard</span>
+            </div>
             <div id="header"></div>
             <div id="app"></div>
         </main>

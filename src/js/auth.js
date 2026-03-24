@@ -2,6 +2,17 @@
 // auth.js — Gestión de sesión Supabase para SchoolGuard
 // ================================================================
 
+// ─── Caché en memoria del perfil ──────────────────────────────
+// Evita múltiples round-trips a Supabase durante la misma sesión.
+let _profileCache = null;
+
+/**
+ * Limpia el caché del perfil (llamar al cerrar sesión).
+ */
+function clearProfileCache() {
+    _profileCache = null;
+}
+
 // ─── Getters de Sesión ────────────────────────────────────────
 /**
  * Obtiene la sesión actual de Supabase.
@@ -13,9 +24,13 @@ async function getSession() {
 }
 
 /**
- * Obtiene el perfil del usuario desde la tabla 'usuarios' vinculada al auth.
+ * Obtiene el perfil del usuario desde la tabla 'usuarios'.
+ * Usa caché en memoria para no repetir la consulta en la misma sesión.
  */
 async function getUserProfile() {
+    // Retornar desde caché si ya fue cargado
+    if (_profileCache) return _profileCache;
+
     const session = await getSession();
     if (!session) return null;
 
@@ -24,8 +39,10 @@ async function getUserProfile() {
         .select('*')
         .eq('id', session.user.id)
         .single();
-    
+
     if (error) return null;
+
+    _profileCache = data;
     return data;
 }
 
@@ -39,6 +56,7 @@ async function requireAuth() {
 
 // ─── Cerrar sesión ────────────────────────────────────────────
 async function logout() {
+    clearProfileCache();
     if (typeof chatDisconnect === 'function') chatDisconnect();
     await supabaseClient.auth.signOut();
     window.location.replace("login.html");
@@ -48,6 +66,7 @@ async function logout() {
 const PAGINAS_POR_ROL = {
     visitantes: ["ADMINISTRADOR", "SECRETARIA"],
     alumnos: ["ADMINISTRADOR", "SECRETARIA"],
+    personal: ["ADMINISTRADOR", "SECRETARIA"],
     registro: ["ADMINISTRADOR", "PORTERO", "SECRETARIA"],
     reports: ["ADMINISTRADOR", "SECRETARIA", "DIRECTOR"],
     usuarios: ["ADMINISTRADOR"],
@@ -65,8 +84,11 @@ async function hasPermission(page) {
 }
 
 // ─── Init: exponer datos del usuario en el sidebar ────────────
-async function initUserInfo() {
-    const profile = await getUserProfile();
+/**
+ * @param {object|null} preloadedProfile - Perfil ya obtenido para evitar re-consulta.
+ */
+async function initUserInfo(preloadedProfile = null) {
+    const profile = preloadedProfile || await getUserProfile();
     if (!profile) return;
 
     const rolLabels = {

@@ -123,6 +123,13 @@ async function submitUsuarioForm(event) {
     const rol = document.getElementById("uRol").value;
     const pass = document.getElementById("uPassword").value;
 
+    // Obtener institucion_id del admin logueado (usa caché, no hace round-trip extra)
+    let instId = null;
+    if (typeof getUserProfile === 'function') {
+        const adminProfile = await getUserProfile();
+        instId = adminProfile ? adminProfile.institucion_id : null;
+    }
+
     try {
         if (editingUserUuid) {
             const { error } = await supabaseClient
@@ -133,6 +140,8 @@ async function submitUsuarioForm(event) {
             if (error) throw error;
             showToast("Usuario actualizado", "success");
         } else {
+            if (!instId) throw new Error("No se pudo determinar la institución del administrador.");
+
             const { data, error } = await supabaseClient.auth.signUp({
                 email: usuario,
                 password: pass,
@@ -140,13 +149,13 @@ async function submitUsuarioForm(event) {
             });
             if (error) throw error;
 
-            let profile = null;
-            if (typeof getUserProfile === 'function') profile = await getUserProfile();
-            let instId = profile ? profile.institucion_id : null;
+            // Insertar perfil en la tabla 'usuarios' con la institución del admin logueado
+            const { error: insertError } = await supabaseClient
+                .from('usuarios')
+                .insert([{ id: data.user.id, nombre, usuario, rol, institucion_id: instId }]);
+            if (insertError) throw insertError;
 
-            // Insertar perfil manualmente si no hay trigger
-            await supabaseClient.from('usuarios').insert([{ id: data.user.id, nombre, usuario, rol, institucion_id: instId }]);
-            showToast("Usuario invitado", "success");
+            showToast("Usuario registrado exitosamente", "success");
         }
         hideUsuarioForm();
         cargarUsuarios();
@@ -184,3 +193,105 @@ async function confirmarEliminarUsuario(id, nombre) {
 
 // ─── INIT ──────────────────────────────────────────────────
 cargarUsuarios();
+
+// ─── IMPORTACIÓN EXCEL ─────────────────────────────────────
+function toggleImportUsuariosPanel() {
+    const panel = document.getElementById("importUsuariosPanel");
+    if (!panel) return;
+    panel.style.display = panel.style.display === "none" ? "block" : "none";
+}
+
+function handleUsuariosDrop(event) {
+    event.preventDefault();
+    document.getElementById("dropZoneUsuarios").classList.remove('drag-over');
+    const file = event.dataTransfer.files[0];
+    if (file) handleUsuariosFile(file);
+}
+
+async function handleUsuariosFile(file) {
+    if (!file) return;
+
+    // Obtener la institución del admin UNA sola vez (usa caché)
+    let instId = null;
+    if (typeof getUserProfile === 'function') {
+        const profile = await getUserProfile();
+        instId = profile ? profile.institucion_id : null;
+    }
+
+    if (!instId) {
+        showToast("No se pudo determinar la institución del administrador", "error");
+        return;
+    }
+
+    let ok = 0, err = 0;
+    const logLines = [];
+
+    try {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer);
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+
+        for (const r of rows) {
+            const nombre  = String(r.nombre  || "").trim();
+            const usuario = String(r.usuario  || "").trim();
+            const rol     = String(r.rol      || "").trim().toUpperCase();
+            const pass    = String(r.password || "").trim();
+
+            const rolesValidos = ["ADMINISTRADOR", "SECRETARIA", "DIRECTOR", "PORTERO", "PROFESOR"];
+
+            if (!nombre || !usuario || !rol || !pass) {
+                err++;
+                logLines.push(`<span class="log-error"><i class="fas fa-times-circle"></i> Fila incompleta: ${usuario || '(sin usuario)'}</span>`);
+                continue;
+            }
+
+            if (!rolesValidos.includes(rol)) {
+                err++;
+                logLines.push(`<span class="log-error"><i class="fas fa-times-circle"></i> Rol inválido "${rol}" para ${usuario}</span>`);
+                continue;
+            }
+
+            // 1. Crear cuenta en Supabase Auth
+            const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+                email: usuario,
+                password: pass,
+                options: { data: { nombre, rol } }
+            });
+
+            if (authError) {
+                err++;
+                logLines.push(`<span class="log-error"><i class="fas fa-times-circle"></i> Auth error "${usuario}": ${authError.message}</span>`);
+                continue;
+            }
+
+            // 2. Insertar fila en tabla 'usuarios' con la institución del admin
+            const { error: insertError } = await supabaseClient
+                .from('usuarios')
+                .insert([{ id: authData.user.id, nombre, usuario, rol, institucion_id: instId }]);
+
+            if (insertError) {
+                err++;
+                logLines.push(`<span class="log-error"><i class="fas fa-times-circle"></i> DB error "${usuario}": ${insertError.message}</span>`);
+            } else {
+                ok++;
+                logLines.push(`<span class="log-ok"><i class="fas fa-check-circle"></i> OK: ${nombre} (${rol})</span>`);
+            }
+        }
+    } catch (e) {
+        showToast("Error al leer el archivo: " + e.message, "error");
+        return;
+    }
+
+    // Mostrar log de resultados
+    const logDiv  = document.getElementById("importUsuariosLog");
+    const logBody = document.getElementById("importUsuariosLogBody");
+    const summary = document.getElementById("importUsuariosSummary");
+    if (logDiv && logBody) {
+        logDiv.style.display = "block";
+        logBody.innerHTML = logLines.join('<br>');
+        if (summary) summary.textContent = ` — ${ok} exitosos, ${err} fallidos`;
+    }
+
+    showToast(`Importación: ${ok} exitosos, ${err} fallidos`, ok > 0 ? "success" : "error");
+    cargarUsuarios();
+}
