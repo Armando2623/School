@@ -64,14 +64,14 @@ async function logout() {
 
 // ─── Permisos por rol ─────────────────────────────────────────
 const PAGINAS_POR_ROL = {
-    visitantes: ["ADMINISTRADOR", "SECRETARIA"],
-    alumnos: ["ADMINISTRADOR", "SECRETARIA"],
-    personal: ["ADMINISTRADOR", "SECRETARIA"],
-    registro: ["ADMINISTRADOR", "PORTERO", "SECRETARIA"],
-    reports: ["ADMINISTRADOR", "SECRETARIA", "DIRECTOR"],
-    usuarios: ["ADMINISTRADOR"],
+    visitantes:    ["ADMINISTRADOR", "SECRETARIA"],
+    alumnos:       ["ADMINISTRADOR", "SECRETARIA"],
+    personal:      ["ADMINISTRADOR", "SECRETARIA", "PORTERO"],
+    registro:      ["ADMINISTRADOR", "PORTERO", "SECRETARIA"],
+    reports:       ["ADMINISTRADOR", "SECRETARIA", "DIRECTOR", "PORTERO"],
+    usuarios:      ["ADMINISTRADOR"],
     configuracion: ["ADMINISTRADOR"],
-    asistencia: ["ADMINISTRADOR", "SECRETARIA"]
+    asistencia:    ["ADMINISTRADOR", "SECRETARIA", "PORTERO"]
 };
 
 async function hasPermission(page) {
