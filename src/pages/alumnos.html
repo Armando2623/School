@@ -185,6 +185,7 @@
                         <th><i class="fas fa-graduation-cap"></i> Grado</th>
                         <th><i class="fas fa-door-open"></i> Sección</th>
                         <th><i class="fas fa-user-tie"></i> Apoderado</th>
+                        <th><i class="fas fa-qrcode"></i> QR</th>
                         <th><i class="fas fa-cogs"></i> Acciones</th>
                     </tr>
                 </thead>
@@ -200,3 +201,48 @@
     </div>
 
 </section>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: Ver/Imprimir QR del Alumno
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="qrModal" style="display:none; align-items:center; justify-content:center;">
+    <div class="modal-content" style="max-width:420px; width:95%; padding:0; border-radius:16px; overflow:hidden;">
+
+        <!-- Header del modal -->
+        <div class="modal-header" style="background: linear-gradient(135deg,#4f46e5,#7c3aed); padding:18px 22px; display:flex; align-items:center; justify-content:space-between;">
+            <h3 style="color:#fff; margin:0; font-size:16px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-qrcode"></i> Código QR del Alumno
+            </h3>
+            <button class="btn-icon" onclick="cerrarQRModal()" style="color:#fff; background:rgba(255,255,255,0.15);">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Cuerpo -->
+        <div style="padding:24px; text-align:center; background:var(--card-bg);">
+            <!-- Info del alumno -->
+            <div id="qrAlumnoInfo" style="margin-bottom:18px;">
+                <p id="qrAlumnoNombre" style="font-size:18px; font-weight:700; color:var(--text-primary); margin:0 0 4px;"></p>
+                <p id="qrAlumnoGrado" style="font-size:13px; color:var(--text-secondary); margin:0;"></p>
+            </div>
+
+            <!-- Canvas donde se dibuja el QR -->
+            <div style="display:inline-block; padding:16px; background:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(79,70,229,0.15);">
+                <canvas id="qrCanvas"></canvas>
+            </div>
+
+            <!-- ID legible debajo -->
+            <p id="qrAlumnoId" style="margin-top:12px; font-size:12px; color:var(--text-secondary); font-family:monospace;"></p>
+
+            <!-- Botones de acción -->
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;">
+                <button class="action-btn secondary" onclick="imprimirQR()" id="btnImprimirQR">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+                <button class="action-btn primary" onclick="descargarQR()" id="btnDescargarQR">
+                    <i class="fas fa-download"></i> Descargar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

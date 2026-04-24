@@ -208,6 +208,7 @@ function updateNavUI(page) {
         'alumnos':      'Alumnos',
         'personal':     'Personal',
         'asistencia':   'Registro Diario',
+        'asistencia_alumnos': 'Asistencia de Alumnos',
         'reports':      'Reportes',
         'mensajes':     'Mensajes',
         'usuarios':     'Usuarios',
@@ -632,6 +633,13 @@ async function checkoutVisitor(id) {
 function closeRegisterModal() {
     document.getElementById('registerModal').classList.remove('active');
     document.getElementById('quickRegisterForm').reset();
+    // Limpiar indicadores visuales
+    const qds = document.getElementById('quickDniStatus');
+    const qns = document.getElementById('quickNameStatus');
+    const qvf = document.getElementById('quickVisitorFound');
+    if (qds) { qds.className = 'dni-status'; qds.innerHTML = ''; }
+    if (qns) { qns.className = 'dni-status'; qns.innerHTML = ''; }
+    if (qvf) qvf.style.display = 'none';
 }
 
 function showConfirmModal(title, message, cancelText, confirmAction, showConfirm = true) {
@@ -920,14 +928,82 @@ function setupUsuarioAutocomplete() {
     });
 }
 
+// DNI lookup para el modal de registro rápido
+function setupQuickDniLookup() {
+    const dniInput  = document.getElementById('quickDocument');
+    const nameInput = document.getElementById('quickName');
+    if (!dniInput || !nameInput) return;
+
+    // Evitar múltiple binding si el modal se reabre
+    if (dniInput.dataset.quickLookupBound === '1') return;
+    dniInput.dataset.quickLookupBound = '1';
+
+    const DEBOUNCE = 500;
+    let timer = null;
+
+    const setQ = (elId, icon, cls) => {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.className = 'dni-status ' + cls;
+        el.innerHTML = icon ? `<i class="${icon}"></i>` : '';
+    };
+
+    dniInput.addEventListener('input', () => {
+        const dni = dniInput.value.trim();
+
+        // Limpiar estado previo
+        setQ('quickDniStatus',  '', '');
+        setQ('quickNameStatus', '', '');
+        const banner = document.getElementById('quickVisitorFound');
+        if (banner) banner.style.display = 'none';
+
+        clearTimeout(timer);
+        if (dni.length < 6) return;
+
+        setQ('quickDniStatus', 'fas fa-spinner fa-spin', 'searching');
+
+        timer = setTimeout(async () => {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('visitantes')
+                    .select('nombre_visitante, dni_visitante')
+                    .eq('dni_visitante', dni)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') throw error;
+
+                if (data) {
+                    // Visitante encontrado: autocompletar nombre
+                    nameInput.value = data.nombre_visitante;
+                    setQ('quickDniStatus',  'fas fa-check-circle', 'found');
+                    setQ('quickNameStatus', 'fas fa-user-check',   'found');
+                    const banner = document.getElementById('quickVisitorFound');
+                    const msg    = document.getElementById('quickVisitorFoundMsg');
+                    if (banner) banner.style.display = 'flex';
+                    if (msg)    msg.textContent = `Visitante encontrado: ${data.nombre_visitante}`;
+                } else {
+                    // Nuevo visitante — limpiar nombre para que lo escriban
+                    setQ('quickDniStatus', 'fas fa-user-plus', 'not-found');
+                    setQ('quickNameStatus', '', '');
+                    if (nameInput.value) nameInput.value = '';
+                }
+            } catch (e) {
+                console.error('Error lookup modal DNI:', e);
+                setQ('quickDniStatus', 'fas fa-exclamation-circle', 'not-found');
+            }
+        }, DEBOUNCE);
+    });
+}
+
 // Se llama al abrir el modal (cuando el DOM del modal ya existe)
 function showRegisterModal() {
     const modal = document.getElementById('registerModal');
     if (!modal) return;
     modal.classList.add('active');
-    setupUsuarioAutocomplete(); // inicializar autocomplete aquí, no en el arranque
-    const quickName = document.getElementById('quickName');
-    if (quickName) quickName.focus();
+    setupUsuarioAutocomplete();  // autocomplete "persona a visitar"
+    setupQuickDniLookup();       // lookup DNI → nombre
+    const dniInput = document.getElementById('quickDocument');
+    if (dniInput) dniInput.focus();
 }
 
 // Console log para debugging

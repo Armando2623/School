@@ -49,8 +49,11 @@
                         <label for="visitorName">
                             <i class="fas fa-user"></i> Nombre Completo *
                         </label>
-                        <input type="text" id="visitorName" required placeholder="Ej: Juan Pérez García"
-                            maxlength="100">
+                        <div class="dni-input-wrapper">
+                            <input type="text" id="visitorName" required placeholder="Se completa al ingresar el DNI..."
+                                maxlength="100">
+                            <span class="dni-status" id="nameAutofillStatus" aria-live="polite"></span>
+                        </div>
                         <span class="error-message" id="nameError"></span>
                     </div>
 

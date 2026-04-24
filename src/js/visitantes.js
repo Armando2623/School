@@ -14,11 +14,22 @@ async function cargarVisitantes() {
     tbody.innerHTML = `<tr><td colspan="6" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>`;
 
     try {
-        // En Supabase traemos visitantes y sus alumnos relacionados
-        const { data, error } = await supabaseClient
-            .from('visitantes')
-            .select('*, alumnos(*)');
+        // Obtener la institución del usuario activo para filtrar solo sus visitantes
+        let institucionId = null;
+        if (typeof getUserProfile === 'function') {
+            const profile = await getUserProfile();
+            if (profile) institucionId = profile.institucion_id;
+        }
 
+        let query = supabaseClient
+            .from('visitantes')
+            .select('*, alumnos(*)')
+            .order('nombre_visitante', { ascending: true });
+
+        // Filtrar por institución si está disponible
+        if (institucionId) query = query.eq('institucion_id', institucionId);
+
+        const { data, error } = await query;
         if (error) throw error;
         todosLosVisitantes = data;
     } catch (err) {

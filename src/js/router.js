@@ -26,7 +26,7 @@ async function loadPage(page) {
             app.innerHTML = html;
 
             // Páginas que re-ejecutan su JS en cada visita (necesitan re-init)
-            const ALWAYS_RELOAD = ["mensajes", "asistencia"];
+            const ALWAYS_RELOAD = ["mensajes", "asistencia", "asistencia_alumnos", "registro", "visitantes"];
 
             const scriptId = `script-${page}`;
             const existing = document.getElementById(scriptId);
@@ -34,6 +34,11 @@ async function loadPage(page) {
             // Para páginas en ALWAYS_RELOAD, eliminar el script anterior
             // para que el IIFE de init se ejecute de nuevo
             if (existing && ALWAYS_RELOAD.includes(page)) {
+                // Detener cámara si hay escáner activo
+                if (typeof window._stopAsistAlumnosScanner === 'function') {
+                    window._stopAsistAlumnosScanner();
+                    window._stopAsistAlumnosScanner = null;
+                }
                 existing.remove();
             }
 

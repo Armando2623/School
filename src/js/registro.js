@@ -68,7 +68,17 @@ function setDniStatus(icon, cssClass) {
 }
 
 function autofillFromVisitor(v) {
-    document.getElementById("visitorName").value = v.nombre_visitante;
+    const nameInput = document.getElementById("visitorName");
+    if (nameInput) nameInput.value = v.nombre_visitante;
+
+    // Indicador visual en el campo nombre
+    const nameStatus = document.getElementById("nameAutofillStatus");
+    if (nameStatus) {
+        nameStatus.className = "dni-status found";
+        nameStatus.innerHTML = `<i class="fas fa-user-check"></i>`;
+        nameStatus.title = "Nombre completado automáticamente";
+    }
+
     const banner = document.getElementById("visitorFound");
     const bannerMsg = document.getElementById("visitorFoundMsg");
     if (banner) {
@@ -103,6 +113,10 @@ function setupDniLookup() {
         const banner = document.getElementById("visitorFound");
         if (banner) banner.style.display = "none";
         setDniStatus("", "");
+
+        // Limpiar el indicador del nombre
+        const nameStatus = document.getElementById("nameAutofillStatus");
+        if (nameStatus) { nameStatus.className = "dni-status"; nameStatus.innerHTML = ""; }
 
         clearTimeout(dniDebounceTimer);
         if (dni.length < 6) return;
@@ -208,7 +222,37 @@ function loadVisitorForEditing() {
     sessionStorage.removeItem('editVisitorData');
 }
 
-// ─── INICIALIZACIÓN ─────────────────────────────────────────────────────────────
+// ─── INICIALIZACIÓN ───────────────────────────────────────────
+
+/** Establece la fecha de HOY y la HORA ACTUAL en los campos del formulario */
+function initRegistroForm() {
+    const now = new Date();
+
+    // Fecha de hoy
+    const dateInput = document.getElementById('visitDate');
+    if (dateInput && !dateInput.value) {
+        dateInput.value = now.toISOString().split('T')[0];
+    }
+
+    // Hora actual (formato HH:MM)
+    const timeInput = document.getElementById('visitTime');
+    if (timeInput) {
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        timeInput.value = `${hh}:${mm}`;
+
+        // Actualizar el reloj cada minuto mientras el campo no sea editado manualmente
+        let userEditedTime = false;
+        timeInput.addEventListener('change', () => { userEditedTime = true; });
+        setInterval(() => {
+            if (userEditedTime) return;
+            const n = new Date();
+            timeInput.value = `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+        }, 60000);
+    }
+}
+
 setupDniLookup();
 setupRegistroAutocomplete();
+initRegistroForm();
 setTimeout(loadVisitorForEditing, 50);

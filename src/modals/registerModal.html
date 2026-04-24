@@ -9,16 +9,35 @@
         </div>
         <div class="modal-body">
             <form id="quickRegisterForm" onsubmit="quickRegister(event)">
+
+                <!-- DNI con búsqueda automática -->
                 <div class="form-group">
-                    <label for="quickName">Nombre del Visitante *</label>
-                    <input type="text" id="quickName" required placeholder="Nombre completo">
+                    <label for="quickDocument"><i class="fas fa-id-card"></i> Documento *</label>
+                    <div class="dni-input-wrapper">
+                        <input type="text" id="quickDocument" required placeholder="Ingresa el DNI para buscar..."
+                            maxlength="20" autocomplete="off">
+                        <span class="dni-status" id="quickDniStatus" aria-live="polite"></span>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="quickDocument">Documento *</label>
-                    <input type="text" id="quickDocument" required placeholder="Número de documento">
+
+                <!-- Banner visitante encontrado -->
+                <div id="quickVisitorFound" class="visitor-found-banner" style="display:none; margin-bottom:10px;">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="quickVisitorFoundMsg">Visitante encontrado.</span>
                 </div>
+
+                <!-- Nombre (se autocompleta) -->
                 <div class="form-group">
-                    <label for="quickReason">Motivo *</label>
+                    <label for="quickName"><i class="fas fa-user"></i> Nombre del Visitante *</label>
+                    <div class="dni-input-wrapper">
+                        <input type="text" id="quickName" required placeholder="Se completa con el DNI...">
+                        <span class="dni-status" id="quickNameStatus" aria-live="polite"></span>
+                    </div>
+                </div>
+
+                <!-- Motivo -->
+                <div class="form-group">
+                    <label for="quickReason"><i class="fas fa-clipboard-list"></i> Motivo *</label>
                     <select id="quickReason" required>
                         <option value="">Seleccionar...</option>
                         <option value="Reunión Padres">Reunión de Padres</option>
@@ -28,21 +47,22 @@
                         <option value="Otro">Otro</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="quickPerson">Persona a Visitar *</label>
-                    <input type="text" id="quickPerson" placeholder="Buscar usuario..." autocomplete="off" required>
 
+                <!-- Persona a visitar con autocomplete -->
+                <div class="form-group">
+                    <label for="quickPerson"><i class="fas fa-user-tie"></i> Persona a Visitar *</label>
+                    <input type="text" id="quickPerson" placeholder="Buscar usuario..." autocomplete="off" required>
                     <div id="suggestions" class="suggestions-box"></div>
-                    <!-- guardará el id real del usuario -->
                     <input type="hidden" id="usuarioId">
                 </div>
-
 
             </form>
         </div>
         <div class="modal-footer">
             <button class="btn-cancel" onclick="closeRegisterModal()">Cancelar</button>
-            <button class="btn-submit" onclick="quickRegister(event)">Registrar</button>
+            <button class="btn-submit" onclick="quickRegister(event)">
+                <i class="fas fa-check"></i> Registrar
+            </button>
         </div>
     </div>
 </div>

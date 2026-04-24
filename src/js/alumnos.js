@@ -1,9 +1,21 @@
 // ============================================================
-// alumnos.js — Módulo de gestión de alumnos del colegio
+// alumnos.js — Módulo de gestión de alumnos + generación QR
 // ============================================================
 
 let todosLosAlumnos = [];
 let editingAlumnoId = null;
+
+// ─── LIBRERÍA QR (carga dinámica) ──────────────────────────
+function cargarLibreriaQR() {
+    return new Promise((resolve, reject) => {
+        if (window.QRCode) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
 
 // ─── CARGA INICIAL ─────────────────────────────────────────
 async function cargarAlumnos() {
@@ -11,12 +23,12 @@ async function cargarAlumnos() {
     const countEl = document.getElementById("alumnosCount");
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="6" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="loading-row"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>`;
 
     try {
         const { data, error } = await supabaseClient
             .from('alumnos')
-            .select('*, apoderado:visitantes(*)'); // Usamos alias 'apoderado' si es posible, o simplemente traemos visitantes
+            .select('*, apoderado:visitantes(*)');
 
         if (error) throw error;
         todosLosAlumnos = data;
@@ -36,7 +48,7 @@ function renderAlumnosTable(lista) {
     if (!tbody) return;
 
     if (lista.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="empty-row"><i class="fas fa-inbox"></i> No hay alumnos</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-row"><i class="fas fa-inbox"></i> No hay alumnos</td></tr>`;
         return;
     }
 
@@ -50,6 +62,12 @@ function renderAlumnosTable(lista) {
             ? `<span class="apoderado-tag"><i class="fas fa-user-tie"></i> ${escapeHtmlA(a.apoderado.nombre_visitante)}</span>`
             : '<span class="text-muted">Sin apoderado</span>'
         }</td>
+            <td>
+                <button class="btn-action view" onclick="mostrarQRAlumno(${a.id})" title="Ver código QR"
+                    style="background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; border:none; padding:6px 10px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; font-size:13px;">
+                    <i class="fas fa-qrcode"></i>
+                </button>
+            </td>
             <td class="actions-cell">
                 <button class="btn-action edit" onclick="editarAlumno(${a.id})" title="Editar"><i class="fas fa-edit"></i></button>
             </td>
@@ -124,14 +142,19 @@ async function submitAlumnoForm(event) {
             if (typeof getUserProfile === 'function') profile = await getUserProfile();
             if (profile && profile.institucion_id) data.institucion_id = profile.institucion_id;
 
-            result = await supabaseClient.from('alumnos').insert([data]);
+            result = await supabaseClient.from('alumnos').insert([data]).select().single();
         }
 
         if (result.error) throw result.error;
 
-        showToast("Alumno guardado", "success");
+        showToast("Alumno guardado exitosamente", "success");
         hideAlumnoForm();
-        cargarAlumnos();
+        await cargarAlumnos();
+
+        // Si fue un INSERT nuevo, mostrar su QR automáticamente
+        if (!editingAlumnoId && result.data) {
+            setTimeout(() => mostrarQRAlumno(result.data.id), 400);
+        }
     } catch (err) {
         console.error("Error:", err);
         showToast("Error al guardar", "error");
@@ -156,6 +179,102 @@ function editarAlumno(id) {
     }
 
     document.getElementById("alumnoFormCard").style.display = "block";
+    document.getElementById("alumnoFormTitle").innerHTML = '<i class="fas fa-user-edit"></i> Editar Alumno';
+}
+
+// ─── QR: MOSTRAR MODAL ─────────────────────────────────────
+async function mostrarQRAlumno(id) {
+    // Buscar en el arreglo local (puede ser llamado justo después del insert)
+    let alumno = todosLosAlumnos.find(a => a.id === id);
+
+    // Si no está en el array (p.e. acaba de insertarse), lo buscamos en BD
+    if (!alumno) {
+        try {
+            const { data } = await supabaseClient.from('alumnos').select('*').eq('id', id).single();
+            alumno = data;
+        } catch (e) {
+            console.error('No se pudo obtener el alumno para QR:', e);
+            return;
+        }
+    }
+
+    if (!alumno) return;
+
+    // Cargar librería si no está disponible
+    await cargarLibreriaQR();
+
+    // Rellenar info
+    document.getElementById("qrAlumnoNombre").textContent = alumno.nombre;
+    document.getElementById("qrAlumnoGrado").textContent = `${alumno.grado} — Sección ${alumno.seccion}`;
+    document.getElementById("qrAlumnoId").textContent = `ID: ${alumno.id}`;
+
+    // Generar QR en canvas
+    const canvas = document.getElementById("qrCanvas");
+    try {
+        await QRCode.toCanvas(canvas, String(alumno.id), {
+            width: 200,
+            margin: 2,
+            color: { dark: '#1e1b4b', light: '#ffffff' }
+        });
+    } catch (e) {
+        console.error('Error generando QR:', e);
+    }
+
+    // Mostrar modal
+    const modal = document.getElementById("qrModal");
+    modal.style.display = "flex";
+
+    // Cerrar al hacer clic fuera del contenido
+    modal.onclick = (e) => { if (e.target === modal) cerrarQRModal(); };
+}
+
+// ─── QR: CERRAR MODAL ─────────────────────────────────────
+function cerrarQRModal() {
+    document.getElementById("qrModal").style.display = "none";
+}
+
+// ─── QR: IMPRIMIR ─────────────────────────────────────────
+function imprimirQR() {
+    const nombre = document.getElementById("qrAlumnoNombre").textContent;
+    const grado  = document.getElementById("qrAlumnoGrado").textContent;
+    const canvas = document.getElementById("qrCanvas");
+    const dataUrl = canvas.toDataURL("image/png");
+
+    const win = window.open('', '_blank');
+    win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>QR - ${nombre}</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 40px; }
+                img  { width: 220px; height: 220px; }
+                h2   { margin: 16px 0 4px; font-size: 20px; }
+                p    { margin: 0; color: #555; font-size: 14px; }
+                .card { display: inline-block; border: 2px solid #4f46e5; border-radius: 16px; padding: 24px; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <img src="${dataUrl}" alt="QR">
+                <h2>${nombre}</h2>
+                <p>${grado}</p>
+            </div>
+            <script>window.onload = () => { window.print(); window.close(); }<\/script>
+        </body>
+        </html>
+    `);
+    win.document.close();
+}
+
+// ─── QR: DESCARGAR ────────────────────────────────────────
+function descargarQR() {
+    const nombre = document.getElementById("qrAlumnoNombre").textContent;
+    const canvas = document.getElementById("qrCanvas");
+    const link = document.createElement('a');
+    link.download = `QR_${nombre.replace(/\s+/g, '_')}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
 }
 
 // ─── HELPER ────────────────────────────────────────────────
@@ -166,4 +285,3 @@ function escapeHtmlA(str) {
 
 // ─── INIT ──────────────────────────────────────────────────
 cargarAlumnos();
-

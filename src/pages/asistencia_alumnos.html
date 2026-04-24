@@ -1,0 +1,226 @@
+<!-- Módulo: Asistencia de Alumnos con QR -->
+<section class="content-section fade-in" id="asistenciaAlumnosSection">
+
+    <!-- ── HEADER ─────────────────────────────────────────── -->
+    <div class="module-header">
+        <div>
+            <h2><i class="fas fa-qrcode"></i> Asistencia de Alumnos</h2>
+            <p>Control diario de asistencia por QR o registro manual</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="date" id="asistAlumnosFecha" class="form-control"
+                style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-primary); font-size:14px;"
+                onchange="cargarAsistenciaAlumnos()">
+            <button class="action-btn secondary" onclick="cargarAsistenciaAlumnos()">
+                <i class="fas fa-sync-alt"></i> <span>Actualizar</span>
+            </button>
+            <button class="action-btn primary" id="btnEscaner" onclick="toggleEscaner()">
+                <i class="fas fa-camera"></i> <span>Activar Escáner</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── PANEL ESCÁNER QR ──────────────────────────────── -->
+    <div id="panelEscaner" style="display:none; margin-bottom:20px;">
+        <div class="form-card" style="padding:0; overflow:hidden;">
+            <div class="form-card-header" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);">
+                <h3 style="color:#fff; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-camera"></i> Escáner QR — Cámara en vivo
+                </h3>
+                <button class="btn-icon" onclick="toggleEscaner()" style="color:#fff; background:rgba(255,255,255,0.15);">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:20px; padding:20px; align-items:flex-start;">
+
+                <!-- Video de cámara -->
+                <div style="position:relative; flex:0 0 auto;">
+                    <video id="qrVideo" autoplay playsinline muted
+                        style="width:300px; height:300px; object-fit:cover; border-radius:12px; border:3px solid #4f46e5; background:#000; display:block;"></video>
+                    <canvas id="qrVideoCanvas" style="display:none;"></canvas>
+
+                    <!-- Overlay de escaneo animado -->
+                    <div style="position:absolute; top:0; left:0; width:300px; height:300px; pointer-events:none;">
+                        <div id="scanLine" style="position:absolute; left:10px; right:10px; height:3px;
+                            background:linear-gradient(90deg, transparent, #4f46e5, transparent);
+                            animation: scanAnim 2s linear infinite; top:10px; border-radius:2px;"></div>
+                        <!-- Esquinas del visor -->
+                        <div style="position:absolute; top:15px; left:15px; width:30px; height:30px;
+                            border-top:3px solid #4f46e5; border-left:3px solid #4f46e5; border-radius:4px 0 0 0;"></div>
+                        <div style="position:absolute; top:15px; right:15px; width:30px; height:30px;
+                            border-top:3px solid #4f46e5; border-right:3px solid #4f46e5; border-radius:0 4px 0 0;"></div>
+                        <div style="position:absolute; bottom:15px; left:15px; width:30px; height:30px;
+                            border-bottom:3px solid #4f46e5; border-left:3px solid #4f46e5; border-radius:0 0 0 4px;"></div>
+                        <div style="position:absolute; bottom:15px; right:15px; width:30px; height:30px;
+                            border-bottom:3px solid #4f46e5; border-right:3px solid #4f46e5; border-radius:0 0 4px 0;"></div>
+                    </div>
+                </div>
+
+                <!-- Resultado del escaneo -->
+                <div style="flex:1; min-width:220px;">
+                    <h4 style="margin:0 0 12px; color:var(--text-primary); font-size:15px;">
+                        <i class="fas fa-info-circle" style="color:#4f46e5;"></i> Estado del escáner
+                    </h4>
+
+                    <div id="escanerStatus" style="
+                        padding:14px 18px; border-radius:10px; background:var(--bg-secondary);
+                        border-left:4px solid #6c757d; margin-bottom:16px; min-height:60px;
+                        display:flex; align-items:center; gap:10px; color:var(--text-secondary); font-size:14px;">
+                        <i class="fas fa-circle-notch fa-spin" style="color:#4f46e5;"></i>
+                        Apunta la cámara al código QR del alumno...
+                    </div>
+
+                    <!-- Último alumno detectado -->
+                    <div id="ultimoDetectado" style="display:none;">
+                        <div style="padding:16px; border-radius:10px; background:rgba(79,70,229,0.08); border:1px solid rgba(79,70,229,0.25);">
+                            <p style="margin:0 0 4px; font-size:12px; color:#4f46e5; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">
+                                <i class="fas fa-check-circle"></i> Último registrado
+                            </p>
+                            <p id="detNombre" style="margin:0; font-size:16px; font-weight:700; color:var(--text-primary);"></p>
+                            <p id="detGrado"  style="margin:2px 0 0; font-size:13px; color:var(--text-secondary);"></p>
+                            <p id="detHora"   style="margin:4px 0 0; font-size:12px; color:#4f46e5; font-weight:600;"></p>
+                        </div>
+                    </div>
+
+                    <!-- Selección de estado vía escáner -->
+                    <div style="margin-top:14px;">
+                        <p style="font-size:12px; color:var(--text-secondary); margin:0 0 8px;">Estado a registrar con el QR:</p>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:13px;">
+                                <input type="radio" name="estadoEscaner" value="PRESENTE" checked> Presente
+                            </label>
+                            <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:13px;">
+                                <input type="radio" name="estadoEscaner" value="TARDANZA"> Tardanza
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── FILTROS POR GRADO / SECCIÓN ───────────────────── -->
+    <div class="form-card" style="padding:14px 18px; margin-bottom:20px;">
+        <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end;">
+            <div class="form-group" style="margin:0; flex:1; min-width:140px;">
+                <label style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:5px; display:block;">
+                    <i class="fas fa-graduation-cap"></i> Grado
+                </label>
+                <select id="filtroGradoAsist" onchange="cargarAsistenciaAlumnos()"
+                    style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-primary); font-size:14px;">
+                    <option value="">— Todos —</option>
+                    <optgroup label="Inicial">
+                        <option value="3°">Inicial 3 años</option>
+                        <option value="4°">Inicial 4 años</option>
+                        <option value="5°">Inicial 5 años</option>
+                    </optgroup>
+                    <optgroup label="Primaria">
+                        <option value="1°">1° Primaria</option>
+                        <option value="2°">2° Primaria</option>
+                        <option value="3°">3° Primaria</option>
+                        <option value="4°">4° Primaria</option>
+                        <option value="5°">5° Primaria</option>
+                        <option value="6°">6° Primaria</option>
+                    </optgroup>
+                    <optgroup label="Secundaria">
+                        <option value="1° Sec">1° Secundaria</option>
+                        <option value="2° Sec">2° Secundaria</option>
+                        <option value="3° Sec">3° Secundaria</option>
+                        <option value="4° Sec">4° Secundaria</option>
+                        <option value="5° Sec">5° Secundaria</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-group" style="margin:0; flex:0 0 110px;">
+                <label style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:5px; display:block;">
+                    <i class="fas fa-door-open"></i> Sección
+                </label>
+                <select id="filtroSeccionAsist" onchange="cargarAsistenciaAlumnos()"
+                    style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-primary); font-size:14px;">
+                    <option value="">— Todas —</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                </select>
+            </div>
+            <div class="search-box" style="flex:1; min-width:180px;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="buscarAlumnoAsist" placeholder="Buscar alumno..." oninput="filtrarTablaAsistencia()">
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ESTADÍSTICAS ──────────────────────────────────── -->
+    <div class="stats-container" style="margin-bottom:20px;">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-users" style="color:#4f46e5;"></i></div>
+            <div class="stat-info"><h3>Total Alumnos</h3><p id="asAlumnosTotal">0</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-check-circle" style="color:#10b981;"></i></div>
+            <div class="stat-info"><h3>Presentes</h3><p id="asAlumnosPresentes">0</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-clock" style="color:#f59e0b;"></i></div>
+            <div class="stat-info"><h3>Tardanzas</h3><p id="asAlumnosTardanzas">0</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-times-circle" style="color:#ef4444;"></i></div>
+            <div class="stat-info"><h3>Faltas</h3><p id="asAlumnosFaltas">0</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-file-medical" style="color:#6366f1;"></i></div>
+            <div class="stat-info"><h3>Justificados</h3><p id="asAlumnosJustificados">0</p></div>
+        </div>
+    </div>
+
+    <!-- ── TABLA DE ALUMNOS ──────────────────────────────── -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 style="font-size:15px; color:var(--text-secondary);">
+                <i class="fas fa-list-alt"></i> Lista de Asistencia
+                <span id="asistenciaFechaLabel" style="font-weight:400; margin-left:8px;"></span>
+            </h3>
+            <div style="display:flex; gap:8px;">
+                <button class="action-btn secondary" onclick="marcarTodosPresentes()"
+                    title="Marcar todos como presentes" style="font-size:12px; padding:6px 12px;">
+                    <i class="fas fa-check-double"></i> Todos Presentes
+                </button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table" id="asistAlumnosTable">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-user-graduate"></i> Alumno</th>
+                        <th><i class="fas fa-graduation-cap"></i> Grado / Sección</th>
+                        <th><i class="fas fa-circle"></i> Estado</th>
+                        <th><i class="fas fa-clock"></i> Hora Entrada</th>
+                        <th><i class="fas fa-pencil-alt"></i> Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="asistAlumnosTableBody">
+                    <tr>
+                        <td colspan="5" class="loading-row">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando alumnos...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="records-count" id="asistAlumnosCount">0 alumnos</span>
+        </div>
+    </div>
+
+</section>
+
+<style>
+@keyframes scanAnim {
+    0%   { top: 10px;  opacity: 1; }
+    50%  { opacity: 0.6; }
+    100% { top: 280px; opacity: 1; }
+}
+</style>
