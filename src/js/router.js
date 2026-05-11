@@ -26,7 +26,8 @@ async function loadPage(page) {
             app.innerHTML = html;
 
             // Páginas que re-ejecutan su JS en cada visita (necesitan re-init)
-            const ALWAYS_RELOAD = ["mensajes", "asistencia", "asistencia_alumnos", "registro", "visitantes"];
+            const ALWAYS_RELOAD = ["mensajes", "asistencia", "asistencia_alumnos", "registro", "visitantes", "reports"];
+
 
             const scriptId = `script-${page}`;
             const existing = document.getElementById(scriptId);
@@ -45,7 +46,9 @@ async function loadPage(page) {
             if (!document.getElementById(scriptId)) {
                 const script = document.createElement("script");
                 script.id = scriptId;
-                script.src = `js/${page}.js`;
+                // Cache-busting: fuerza recarga del JS tras cada navegación
+                const cb = ALWAYS_RELOAD.includes(page) ? `?t=${Date.now()}` : '';
+                script.src = `js/${page}.js${cb}`;
                 document.body.appendChild(script);
             }
         });

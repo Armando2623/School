@@ -740,51 +740,11 @@ function getLast7Days() {
 }
 
 // ========================================
-// Reportes
+// Reportes — lógica delegada a js/reports.js
 // ========================================
+// generateReport, exportReport, printReport y clearReportFilters
+// se asignan a window.* desde reports.js al navegar al módulo.
 
-function generateReport() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-
-    let filteredVisitors = [...visitors];
-
-    if (startDate) {
-        filteredVisitors = filteredVisitors.filter(v => v.date >= startDate);
-    }
-
-    if (endDate) {
-        filteredVisitors = filteredVisitors.filter(v => v.date <= endDate);
-    }
-
-    // Actualizar resumen
-    document.getElementById('totalVisitsReport').textContent = filteredVisitors.length;
-    document.getElementById('activeVisitsReport').textContent =
-        filteredVisitors.filter(v => v.estadoRegistro === 'REGISTRADO').length;
-
-    // Motivo más común
-    const reasonCounts = {};
-    filteredVisitors.forEach(v => {
-        reasonCounts[v.reason] = (reasonCounts[v.reason] || 0) + 1;
-    });
-
-    const topReason = Object.entries(reasonCounts)
-        .sort((a, b) => b[1] - a[1])[0];
-
-    document.getElementById('topReason').textContent = topReason ? topReason[0] : 'N/A';
-
-    showToast('Reporte generado exitosamente', 'success');
-}
-
-function exportReport(format) {
-    showToast(`Exportando reporte en formato ${format.toUpperCase()}...`, 'info');
-    // Aquí se implementaría la lógica real de exportación
-}
-
-function printReport() {
-    window.print();
-    showToast('Preparando impresión...', 'info');
-}
 
 // ========================================
 // Utilidades
@@ -964,25 +924,26 @@ function setupQuickDniLookup() {
 
         timer = setTimeout(async () => {
             try {
+                // .limit(1) devuelve array vacío [] cuando no hay filas — nunca 406
                 const { data, error } = await supabaseClient
                     .from('visitantes')
                     .select('nombre_visitante, dni_visitante')
                     .eq('dni_visitante', dni)
-                    .single();
+                    .limit(1);
 
-                if (error && error.code !== 'PGRST116') throw error;
+                if (error) throw error;
 
-                if (data) {
-                    // Visitante encontrado: autocompletar nombre
-                    nameInput.value = data.nombre_visitante;
+                const found = data && data.length > 0 ? data[0] : null;
+
+                if (found) {
+                    nameInput.value = found.nombre_visitante;
                     setQ('quickDniStatus',  'fas fa-check-circle', 'found');
                     setQ('quickNameStatus', 'fas fa-user-check',   'found');
                     const banner = document.getElementById('quickVisitorFound');
                     const msg    = document.getElementById('quickVisitorFoundMsg');
                     if (banner) banner.style.display = 'flex';
-                    if (msg)    msg.textContent = `Visitante encontrado: ${data.nombre_visitante}`;
+                    if (msg)    msg.textContent = `Visitante encontrado: ${found.nombre_visitante}`;
                 } else {
-                    // Nuevo visitante — limpiar nombre para que lo escriban
                     setQ('quickDniStatus', 'fas fa-user-plus', 'not-found');
                     setQ('quickNameStatus', '', '');
                     if (nameInput.value) nameInput.value = '';
@@ -994,6 +955,7 @@ function setupQuickDniLookup() {
         }, DEBOUNCE);
     });
 }
+
 
 // Se llama al abrir el modal (cuando el DOM del modal ya existe)
 function showRegisterModal() {

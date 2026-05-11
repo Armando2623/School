@@ -1,53 +1,197 @@
 <!-- Reports Section -->
 <section class="content-section" id="reportsSection">
-    <div class="reports-container">
-        <div class="report-header">
-            <h2><i class="fas fa-file-alt"></i> Reportes y Estadísticas</h2>
-        </div>
+    <div class="reports-wrapper">
 
-        <div class="date-range-selector">
-            <div class="form-group">
-                <label for="startDate">
-                    <i class="fas fa-calendar"></i> Fecha Inicial
-                </label>
-                <input type="date" id="startDate">
+        <!-- ===== ENCABEZADO DEL MÓDULO ===== -->
+        <div class="reports-module-header">
+            <div class="reports-title-block">
+                <div class="reports-icon-box">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <div>
+                    <h2>Reportes y Estadísticas</h2>
+                    <p class="reports-subtitle">Genera, filtra y exporta reportes institucionales de visitas</p>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="endDate">
-                    <i class="fas fa-calendar"></i> Fecha Final
-                </label>
-                <input type="date" id="endDate">
-            </div>
-            <button class="btn-generate" onclick="generateReport()">
-                <i class="fas fa-chart-bar"></i> Generar Reporte
-            </button>
-        </div>
-
-        <div class="report-summary" id="reportSummary">
-            <div class="summary-card">
-                <h3>Total de Visitas</h3>
-                <span class="summary-value" id="totalVisitsReport">0</span>
-            </div>
-            <div class="summary-card">
-                <h3>Visitas Activas</h3>
-                <span class="summary-value" id="activeVisitsReport">0</span>
-            </div>
-            <div class="summary-card">
-                <h3>Motivo Más Común</h3>
-                <span class="summary-value" id="topReason">N/A</span>
+            <div class="report-school-badge" id="reportSchoolBadge">
+                <i class="fas fa-school"></i>
+                <span id="reportSchoolName">Institución Educativa</span>
             </div>
         </div>
 
-        <div class="export-options">
-            <button class="export-btn" onclick="exportReport('pdf')">
-                <i class="fas fa-file-pdf"></i> Exportar PDF
-            </button>
-            <button class="export-btn" onclick="exportReport('excel')">
-                <i class="fas fa-file-excel"></i> Exportar Excel
-            </button>
-            <button class="export-btn" onclick="printReport()">
-                <i class="fas fa-print"></i> Imprimir
-            </button>
+        <!-- ===== PANEL DE FILTROS ===== -->
+        <div class="report-filters-panel">
+            <div class="filters-panel-header">
+                <i class="fas fa-filter"></i>
+                <span>Filtros del Reporte</span>
+            </div>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label for="startDate">
+                        <i class="fas fa-calendar-alt"></i> Fecha Inicial
+                    </label>
+                    <input type="date" id="startDate" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">
+                        <i class="fas fa-calendar-check"></i> Fecha Final
+                    </label>
+                    <input type="date" id="endDate" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="filterReportStatus">
+                        <i class="fas fa-toggle-on"></i> Estado de Visita
+                    </label>
+                    <select id="filterReportStatus" class="filter-input">
+                        <option value="all">Todos los estados</option>
+                        <option value="REGISTRADO">Registrado (En curso)</option>
+                        <option value="FINALIZADO">Finalizado</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterReportMotivo">
+                        <i class="fas fa-tag"></i> Motivo de Visita
+                    </label>
+                    <select id="filterReportMotivo" class="filter-input">
+                        <option value="all">Todos los motivos</option>
+                        <option value="reunion">Reunión con docente</option>
+                        <option value="tramite">Trámite administrativo</option>
+                        <option value="entrega">Entrega de documentos</option>
+                        <option value="recojo">Recojo de alumno</option>
+                        <option value="emergencia">Emergencia</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-generate-report" id="btnGenerateReport" onclick="generateReport()">
+                        <i class="fas fa-search"></i>
+                        Generar Reporte
+                    </button>
+                    <button class="btn-clear-filters" onclick="clearReportFilters()">
+                        <i class="fas fa-times"></i>
+                        Limpiar Filtros
+                    </button>
+                </div>
+            </div>
         </div>
+
+        <!-- ===== TARJETAS DE RESUMEN ===== -->
+        <div class="report-stats-grid" id="reportSummary">
+            <div class="report-stat-card stat-total">
+                <div class="stat-card-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-card-info">
+                    <span class="stat-card-label">Total de Visitas</span>
+                    <span class="stat-card-value" id="totalVisitsReport">0</span>
+                </div>
+            </div>
+            <div class="report-stat-card stat-active">
+                <div class="stat-card-icon">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <div class="stat-card-info">
+                    <span class="stat-card-label">En Curso</span>
+                    <span class="stat-card-value" id="activeVisitsReport">0</span>
+                </div>
+            </div>
+            <div class="report-stat-card stat-finished">
+                <div class="stat-card-icon">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-card-info">
+                    <span class="stat-card-label">Finalizadas</span>
+                    <span class="stat-card-value" id="finishedVisitsReport">0</span>
+                </div>
+            </div>
+            <div class="report-stat-card stat-reason">
+                <div class="stat-card-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="stat-card-info">
+                    <span class="stat-card-label">Motivo Principal</span>
+                    <span class="stat-card-value stat-card-value--sm" id="topReason">N/A</span>
+                </div>
+            </div>
+            <div class="report-stat-card stat-avg">
+                <div class="stat-card-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-card-info">
+                    <span class="stat-card-label">Promedio Diario</span>
+                    <span class="stat-card-value" id="avgVisitsReport">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== BOTONES DE EXPORTACIÓN ===== -->
+        <div class="export-actions-bar" id="exportActionsBar" style="display:none;">
+            <div class="export-bar-label">
+                <i class="fas fa-download"></i>
+                <span>Exportar Reporte</span>
+                <span class="export-record-count" id="exportRecordCount"></span>
+            </div>
+            <div class="export-buttons-group">
+                <button class="export-action-btn export-pdf" id="btnExportPdf" onclick="exportReport('pdf')">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Exportar PDF</span>
+                    <small>Formato profesional</small>
+                </button>
+                <button class="export-action-btn export-excel" id="btnExportExcel" onclick="exportReport('excel')">
+                    <i class="fas fa-file-excel"></i>
+                    <span>Exportar Excel</span>
+                    <small>Con hoja de resumen</small>
+                </button>
+                <button class="export-action-btn export-print" onclick="printReport()">
+                    <i class="fas fa-print"></i>
+                    <span>Imprimir</span>
+                    <small>Vista de impresión</small>
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== TABLA DE VISTA PREVIA ===== -->
+        <div class="report-preview-container" id="reportPreviewContainer" style="display:none;">
+            <div class="report-preview-header">
+                <div class="preview-title">
+                    <i class="fas fa-table"></i>
+                    <span>Vista Previa del Reporte</span>
+                </div>
+                <span class="preview-range-label" id="previewRangeLabel"></span>
+            </div>
+            <div class="report-table-wrapper">
+                <table class="report-preview-table" id="reportPreviewTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre del Visitante</th>
+                            <th>Documento</th>
+                            <th>Motivo</th>
+                            <th>Persona Visitada</th>
+                            <th>Hora Ingreso</th>
+                            <th>Hora Salida</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportPreviewBody">
+                        <tr>
+                            <td colspan="8" class="report-empty-msg">
+                                Genera un reporte para ver los datos
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== ESTADO VACÍO (antes de generar) ===== -->
+        <div class="report-empty-state" id="reportEmptyState">
+            <div class="empty-state-icon">
+                <i class="fas fa-file-chart-bar"></i>
+            </div>
+            <h3>Aún no has generado un reporte</h3>
+            <p>Selecciona el rango de fechas y los filtros deseados, luego haz clic en <strong>Generar Reporte</strong>.</p>
+        </div>
+
     </div>
 </section>
