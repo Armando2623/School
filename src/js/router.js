@@ -26,7 +26,7 @@ async function loadPage(page) {
             app.innerHTML = html;
 
             // Páginas que re-ejecutan su JS en cada visita (necesitan re-init)
-            const ALWAYS_RELOAD = ["mensajes", "asistencia", "asistencia_alumnos", "registro", "visitantes", "reports"];
+            const ALWAYS_RELOAD = ["mensajes", "asistencia", "asistencia_alumnos", "registro", "visitantes", "reports", "alumnos", "personal", "usuarios", "configuracion"];
 
 
             const scriptId = `script-${page}`;

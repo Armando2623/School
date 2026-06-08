@@ -10,7 +10,7 @@ function cargarLibreriaQR() {
     return new Promise((resolve, reject) => {
         if (window.QRCode) { resolve(); return; }
         const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+        s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js';
         s.onload = resolve;
         s.onerror = reject;
         document.head.appendChild(s);
