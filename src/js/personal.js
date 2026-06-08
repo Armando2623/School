@@ -1,6 +1,8 @@
 // ============================================================
 // personal.js — Gestión de Personal del Colegio
+// Envuelto en IIFE para evitar errores de re-declaración.
 // ============================================================
+(function () {
 
 let todoElPersonal = [];
 let editingPersonalId = null;
@@ -363,3 +365,20 @@ async function handlePersonalFile(file) {
     if (typeof showToast === 'function') showToast(`Importación: ${ok} exitosos, ${err} fallidos`, ok > 0 ? "success" : "error");
     cargarPersonal();
 }
+
+// ─── EXPOSICIÓN AL SCOPE GLOBAL ────────────────────────────
+window.cargarPersonal = cargarPersonal;
+window.filtrarPersonal = filtrarPersonal;
+window.showAddPersonalForm = showAddPersonalForm;
+window.hidePersonalForm = hidePersonalForm;
+window.submitPersonalForm = submitPersonalForm;
+window.editarPersonal = editarPersonal;
+window.confirmarEliminarPersonal = confirmarEliminarPersonal;
+window.activarComoUsuario = activarComoUsuario;
+window.cerrarModalActivar = cerrarModalActivar;
+window.submitActivarUsuario = submitActivarUsuario;
+window.toggleImportPersonalPanel = toggleImportPersonalPanel;
+window.handlePersonalDrop = handlePersonalDrop;
+window.handlePersonalFile = handlePersonalFile;
+
+})();

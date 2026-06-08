@@ -1,6 +1,8 @@
 /**
  * Gestor de la página de Configuración
+ * Envuelto en IIFE para evitar errores de re-declaración.
  */
+(function () {
 const ConfiguracionManager = {
     async init() {
         console.log("Inicializando módulo de configuración...");
@@ -167,3 +169,8 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
         setTimeout(() => ConfiguracionManager.init(), 100);
     });
 }
+
+// ─── EXPOSICIÓN AL SCOPE GLOBAL ────────────────────────────
+window.ConfiguracionManager = ConfiguracionManager;
+
+})();

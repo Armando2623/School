@@ -1,6 +1,8 @@
 // ============================================================
 // visitantes.js — Gestión de visitantes / apoderados
+// Envuelto en IIFE para evitar errores de re-declaración.
 // ============================================================
+(function () {
 
 let todosLosVisitantes = [];
 let editingVisitanteId = null;
@@ -213,3 +215,25 @@ async function handleVisitantesFile(file) {
     showToast(`Importación: ${ok} exitosos, ${err} fallidos`, "info");
     cargarVisitantes();
 }
+
+function handleVisitantesDrop(event) {
+    event.preventDefault();
+    const dropZone = document.getElementById("dropZoneVisitantes");
+    if (dropZone) dropZone.classList.remove('drag-over');
+    const file = event.dataTransfer.files[0];
+    if (file) handleVisitantesFile(file);
+}
+
+// ─── EXPOSICIÓN AL SCOPE GLOBAL ────────────────────────────
+window.cargarVisitantes = cargarVisitantes;
+window.filtrarVisitantes = filtrarVisitantes;
+window.showAddVisitanteForm = showAddVisitanteForm;
+window.hideVisitanteForm = hideVisitanteForm;
+window.submitVisitanteForm = submitVisitanteForm;
+window.verVisitante = verVisitante;
+window.editarVisitante = editarVisitante;
+window.toggleImportVisitantesPanel = toggleImportVisitantesPanel;
+window.handleVisitantesDrop = handleVisitantesDrop;
+window.handleVisitantesFile = handleVisitantesFile;
+
+})();

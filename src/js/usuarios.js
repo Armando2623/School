@@ -1,6 +1,8 @@
 // ============================================================
 // usuarios.js — Gestión de usuarios (ADMINISTRADOR)
+// Envuelto en IIFE para evitar errores de re-declaración.
 // ============================================================
+(function () {
 
 let todosLosUsuarios = [];
 let editingUserUuid = null;
@@ -295,3 +297,17 @@ async function handleUsuariosFile(file) {
     showToast(`Importación: ${ok} exitosos, ${err} fallidos`, ok > 0 ? "success" : "error");
     cargarUsuarios();
 }
+
+// ─── EXPOSICIÓN AL SCOPE GLOBAL ────────────────────────────
+window.cargarUsuarios = cargarUsuarios;
+window.filtrarUsuarios = filtrarUsuarios;
+window.showAddUsuarioForm = showAddUsuarioForm;
+window.hideUsuarioForm = hideUsuarioForm;
+window.submitUsuarioForm = submitUsuarioForm;
+window.editarUsuario = editarUsuario;
+window.confirmarEliminarUsuario = confirmarEliminarUsuario;
+window.toggleImportUsuariosPanel = toggleImportUsuariosPanel;
+window.handleUsuariosDrop = handleUsuariosDrop;
+window.handleUsuariosFile = handleUsuariosFile;
+
+})();

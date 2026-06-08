@@ -1,6 +1,8 @@
 // ============================================================
 // alumnos.js — Módulo de gestión de alumnos + generación QR
+// Envuelto en IIFE para evitar errores de re-declaración.
 // ============================================================
+(function () {
 
 let todosLosAlumnos = [];
 let editingAlumnoId = null;
@@ -285,3 +287,17 @@ function escapeHtmlA(str) {
 
 // ─── INIT ──────────────────────────────────────────────────
 cargarAlumnos();
+
+// ─── EXPOSICIÓN AL SCOPE GLOBAL ────────────────────────────
+window.cargarAlumnos = cargarAlumnos;
+window.filtrarAlumnos = filtrarAlumnos;
+window.showAddAlumnoForm = showAddAlumnoForm;
+window.hideAlumnoForm = hideAlumnoForm;
+window.submitAlumnoForm = submitAlumnoForm;
+window.editarAlumno = editarAlumno;
+window.mostrarQRAlumno = mostrarQRAlumno;
+window.cerrarQRModal = cerrarQRModal;
+window.imprimirQR = imprimirQR;
+window.descargarQR = descargarQR;
+
+})();
